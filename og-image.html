@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex,nofollow">
+<title>Трезвометр — обложка для соцсетей</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+  body {
+    font-family: "Segoe UI", -apple-system, Roboto, Arial, sans-serif;
+    background: radial-gradient(1100px 520px at 8% -10%, #12313b 0%, #0a1a21 45%, #060c11 100%);
+    color: #eaf2f4; padding: 64px 72px; display: flex; flex-direction: column;
+    justify-content: space-between;
+  }
+  .top { display: flex; align-items: center; gap: 18px; }
+  .mark { width: 62px; height: 62px; flex: none; }
+  .name { font-size: 34px; font-weight: 700; letter-spacing: .2px; }
+  .name span { color: #34d8b3; }
+  h1 { font-size: 62px; line-height: 1.08; font-weight: 700; letter-spacing: -.5px; max-width: 940px; }
+  h1 em { font-style: normal; color: #34d8b3; }
+  .lead { font-size: 27px; line-height: 1.35; color: #9fb3bb; max-width: 900px; margin-top: 18px; }
+  .chips { display: flex; gap: 12px; margin-top: 26px; }
+  .chip {
+    font-size: 21px; padding: 9px 16px; border-radius: 999px;
+    border: 1px solid rgba(52, 216, 179, .45); color: #cdf5ea; background: rgba(52, 216, 179, .10);
+  }
+  .chip.blue { border-color: rgba(111, 179, 255, .45); color: #cfe6ff; background: rgba(111, 179, 255, .10); }
+  .bottom { display: flex; align-items: flex-end; justify-content: space-between; }
+  .domain { font-size: 26px; color: #6f8790; letter-spacing: .4px; }
+  .zero { font-size: 96px; font-weight: 700; color: rgba(52, 216, 179, .22); line-height: .8; letter-spacing: -4px; }
+</style>
+</head>
+<body>
+  <div class="top">
+    <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
+      <circle cx="16" cy="16" r="13" fill="none" stroke="#34d8b3" stroke-width="2.2" stroke-dasharray="60 22" stroke-linecap="round" transform="rotate(-90 16 16)"/>
+      <path d="M16 8.5c3.6 2.6 5.6 5.2 5.6 8a5.6 5.6 0 0 1-11.2 0c0-2.8 2-5.4 5.6-8z" fill="rgba(52,216,179,.22)" stroke="#34d8b3" stroke-width="1.6"/>
+    </svg>
+    <div class="name">Трезво<span>метр</span></div>
+  </div>
+
+  <div>
+    <h1>Когда алкоголь выйдет:<br>расчёт, дневник и профиль <em>без обещаний</em></h1>
+    <p class="lead">Оценка концентрации по весу, росту, полу и возрасту. Режим «0,00» с запасом времени,
+      личная калибровка по алкотестеру, графики и рекомендации.</p>
+    <div class="chips">
+      <span class="chip">‰, %, мг/л и стандартные дозы</span>
+      <span class="chip blue">Данные остаются в браузере</span>
+      <span class="chip">18+</span>
+    </div>
+  </div>
+
+  <div class="bottom">
+    <div class="domain">trezvometr.ru</div>
+    <div class="zero">0,00</div>
+  </div>
+</body>
+</html>

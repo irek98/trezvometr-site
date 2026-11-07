@@ -1,0 +1,13 @@
+{
+  "name": "Трезвометр — контроль состояния",
+  "short_name": "Трезвометр",
+  "description": "Расчёт концентрации алкоголя, дневник и профиль. Данные хранятся только в браузере.",
+  "lang": "ru",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#060c11",
+  "theme_color": "#060c11",
+  "orientation": "portrait-primary",
+  "categories": ["health", "lifestyle", "utilities"]
+}

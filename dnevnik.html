@@ -1,0 +1,136 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#060c11">
+  <title>Дневник: стандартные дозы, дни без алкоголя и графики</title>
+  <meta name="description" content="Дневник алкоголя: записи по напиткам, стандартные дозы за неделю, дни без алкоголя, часы выше порога прибора, графики и экспорт в CSV. Данные хранятся только в браузере.">
+  
+  <!-- domain-block -->
+  <link rel="canonical" href="https://trezvometr.ru/dnevnik.html">
+  <meta property="og:url" content="https://trezvometr.ru/dnevnik.html">
+  <meta property="og:image" content="https://trezvometr.ru/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://trezvometr.ru/assets/og-image.png">
+  <!-- /domain-block -->
+  <link rel="stylesheet" href="assets/style.css?v=1">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap header-row">
+    <a class="logo" href="index.html">
+      <svg class="logo-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <circle cx="16" cy="16" r="13" fill="none" stroke="#34d8b3" stroke-width="2.2" stroke-dasharray="60 22" stroke-linecap="round" transform="rotate(-90 16 16)"/>
+        <path d="M16 8.5c3.6 2.6 5.6 5.2 5.6 8a5.6 5.6 0 0 1-11.2 0c0-2.8 2-5.4 5.6-8z" fill="rgba(52,216,179,.22)" stroke="#34d8b3" stroke-width="1.6"/>
+      </svg>
+      <span>Трезвометр</span>
+    </a>
+    <nav class="nav" aria-label="Основная навигация">
+      <a href="index.html">Калькулятор</a>
+      <a href="pro.html">0,00 для профи</a>
+      <a href="dnevnik.html">Дневник</a>
+      <a href="profil.html">Профиль</a>
+      <a href="baza-znaniy.html">База знаний</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="wrap hero">
+    <h1>Дневник</h1>
+    <p class="lead">Записи по напиткам, стандартные дозы за неделю, дни без алкоголя и часы, когда концентрация
+      была выше порога прибора. Всё считается локально.</p>
+  </section>
+
+  <section class="wrap section" style="padding-top:8px">
+    <div class="card">
+      <h2>Добавить запись</h2>
+      <div class="form-grid">
+        <label class="field field-wide"><span>Напиток</span><select id="drink"></select></label>
+        <label class="field"><span>Порций</span><input id="count" type="number" min="1" max="20" step="1" value="1"></label>
+        <label class="field"><span>Объём порции, мл</span><input id="volume" type="number" min="10" max="2000" step="10" value="500"></label>
+        <label class="field"><span>Крепость, %</span><input id="abv" type="number" min="0.1" max="96" step="0.1" value="4.5"></label>
+        <label class="field"><span>Время</span><input id="when" type="time"></label>
+        <label class="field"><span>День</span>
+          <select id="day"><option value="0">Сегодня</option><option value="-1">Вчера</option><option value="-2">2 дня назад</option></select>
+        </label>
+        <label class="field field-wide"><span>Заметка (необязательно)</span><input id="note" type="text" maxlength="80" placeholder="например: ужин с друзьями"></label>
+      </div>
+      <div class="btn-row" style="margin-top:14px">
+        <button type="button" class="btn" id="add-entry">Добавить в дневник</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="export-csv">Экспорт CSV</button>
+        <a class="btn btn-ghost btn-sm" href="index.html">Открыть калькулятор</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap section" style="padding-top:0">
+    <div class="card">
+      <h2>Последние 7 дней</h2>
+      <div id="stats" class="stats"></div>
+      <div id="chart-days" class="chart-box"></div>
+      <p class="tiny muted" style="margin-top:10px">Ориентиры низкого риска по ВОЗ: не больше 2 стандартных доз в день
+        и 14 в неделю (доза — 10 г чистого спирта). Это не «безопасная норма», а порог, ниже которого риски заметно меньше.</p>
+    </div>
+
+    <div class="card">
+      <h2>Что сделать дальше</h2>
+      <div id="advice" class="advice"></div>
+    </div>
+
+    <div class="card">
+      <h2>Все записи</h2>
+      <div id="entries" class="table-wrap"></div>
+      <div id="entries-note" class="small muted" style="margin-top:10px"></div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-cols">
+      <div>
+        <h3>Трезвометр</h3>
+        <p class="small">Расчёт концентрации алкоголя, дневник и контроль состояния. Все данные хранятся в вашем браузере
+          и никуда не отправляются.</p>
+      </div>
+      <div>
+        <h3>Инструменты</h3>
+        <div class="footer-links">
+          <a href="index.html">Калькулятор</a>
+          <a href="pro.html">Режим 0,00</a>
+          <a href="dnevnik.html">Дневник</a>
+          <a href="profil.html">Профиль</a>
+        </div>
+      </div>
+      <div>
+        <h3>Документы</h3>
+        <div class="footer-links">
+          <a href="baza-znaniy.html">База знаний</a>
+          <a href="o-proekte.html">О проекте</a>
+          <a href="politika.html">Политика</a>
+          <a href="disclaimer.html">Отказ от ответственности</a>
+        </div>
+      </div>
+    </div>
+    <p class="footer-disclaimer">18+. Сайт не является медицинским изделием и не заменяет консультацию врача.
+      Расчёт основан на усреднённых формулах (Видмарк, Watson) и ориентировочной скорости выведения алкоголя;
+      реальные значения индивидуальны и могут отличаться в разы. Никакое значение на сайте не означает,
+      что вы можете управлять транспортом или быть допущены к работе: решение принимает только водитель
+      и медработник, а проверку проводит прибор.</p>
+  </div>
+</footer>
+
+<script src="assets/config.js?v=1"></script>
+<script src="assets/engine.js?v=1"></script>
+<script src="assets/store.js?v=1"></script>
+<script src="assets/ui.js?v=1"></script>
+<script src="assets/advice.js?v=1"></script>
+<script src="assets/charts.js?v=1"></script>
+<script src="assets/diary.js?v=1"></script>
+</body>
+</html>
+

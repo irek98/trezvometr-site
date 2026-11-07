@@ -1,0 +1,239 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#060c11">
+  <title>Калькулятор алкоголя: через сколько концентрация в крови вернётся к нулю</title>
+  <meta name="description" content="Расчёт концентрации алкоголя в крови по весу, росту, полу и возрасту: когда показатель вернётся к 0,00 ‰, сколько ещё можно до поездки, дневник и профиль. Оценка с запасом по времени, без обещаний «можно за руль».">
+  
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Трезвометр">
+  <meta property="og:locale" content="ru_RU">
+  <meta property="og:title" content="Калькулятор алкоголя: когда концентрация вернётся к нулю">
+  <meta property="og:description" content="Расчёт по весу, росту, полу и возрасту, режим 0,00 для профессионалов, дневник и графики. Оценка с запасом по времени.">
+  <!-- domain-block -->
+  <link rel="canonical" href="https://trezvometr.ru/">
+  <meta property="og:url" content="https://trezvometr.ru/">
+  <meta property="og:image" content="https://trezvometr.ru/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://trezvometr.ru/assets/og-image.png">
+  <!-- /domain-block -->
+  <link rel="stylesheet" href="assets/style.css?v=1">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap header-row">
+    <a class="logo" href="index.html">
+      <svg class="logo-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <circle cx="16" cy="16" r="13" fill="none" stroke="#34d8b3" stroke-width="2.2" stroke-dasharray="60 22" stroke-linecap="round" transform="rotate(-90 16 16)"/>
+        <path d="M16 8.5c3.6 2.6 5.6 5.2 5.6 8a5.6 5.6 0 0 1-11.2 0c0-2.8 2-5.4 5.6-8z" fill="rgba(52,216,179,.22)" stroke="#34d8b3" stroke-width="1.6"/>
+      </svg>
+      <span>Трезвометр</span>
+    </a>
+    <nav class="nav" aria-label="Основная навигация">
+      <a href="index.html">Калькулятор</a>
+      <a href="pro.html">0,00 для профи</a>
+      <a href="dnevnik.html">Дневник</a>
+      <a href="profil.html">Профиль</a>
+      <a href="baza-znaniy.html">База знаний</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="wrap hero">
+    <h1>Когда концентрация алкоголя вернётся к нулю</h1>
+    <p class="lead">Расчёт по весу, полу, росту и возрасту с поправкой на скорость выведения и запас времени.
+      Это оценка состояния, а не разрешение садиться за руль.</p>
+    <div class="hero-badges">
+      <span class="chip">Считает в ‰, %, мг/л и стандартных дозах</span>
+      <span class="chip chip-blue">Данные остаются в браузере</span>
+      <span class="chip chip-warn">Есть режим «0,00» для профессионалов</span>
+    </div>
+  </section>
+
+  <section class="wrap section" style="padding-top:8px">
+    <div class="grid grid-2">
+      <div class="card">
+        <h2>Что и когда выпито</h2>
+        <p class="small muted">Пол, вес, рост и возраст синхронизированы с профилем: поправите здесь — изменится и в профиле.</p>
+
+        <div class="form-grid" id="profile-quick">
+          <label class="field"><span>Пол</span>
+            <select id="p-sex"><option value="male">Мужской</option><option value="female">Женский</option><option value="other">Не указывать</option></select>
+          </label>
+          <label class="field"><span>Вес, кг</span><input id="p-weight" type="number" min="35" max="220" step="1" value="75"></label>
+          <label class="field"><span>Рост, см</span><input id="p-height" type="number" min="130" max="220" step="1" value="175"></label>
+          <label class="field"><span>Возраст</span><input id="p-age" type="number" min="18" max="99" step="1" value="35"></label>
+        </div>
+
+        <hr style="border:none;border-top:1px dashed rgba(255,255,255,.12);margin:18px 0">
+
+        <div class="form-grid">
+          <label class="field field-wide"><span>Напиток</span><select id="drink"></select></label>
+          <label class="field"><span>Порций</span><input id="count" type="number" min="1" max="20" step="1" value="1"></label>
+          <label class="field"><span>Объём порции, мл</span><input id="volume" type="number" min="10" max="2000" step="10" value="500"></label>
+          <label class="field"><span>Крепость, %</span><input id="abv" type="number" min="0.1" max="96" step="0.1" value="4.5"></label>
+          <label class="field"><span>Время</span><input id="when" type="time"></label>
+          <label class="field"><span>День</span>
+            <select id="day"><option value="0">Сегодня</option><option value="-1">Вчера</option><option value="1">Завтра</option></select>
+          </label>
+        </div>
+
+        <div class="btn-row" style="margin-top:14px">
+          <button type="button" class="btn" id="add-drink">Добавить напиток</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="from-diary">Из дневника</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="reset-list">Очистить</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="save-diary">В дневник</button>
+        </div>
+
+        <ul id="drink-list" class="breakdown" style="margin-top:16px"></ul>
+
+        <details style="margin-top:16px">
+          <summary>Параметры расчёта</summary>
+          <div class="form-grid" style="margin-top:12px">
+            <label class="field"><span>Всасывание</span>
+              <select id="peak">
+                <option value="20">Быстро (натощак) — 20 мин</option>
+                <option value="40" selected>Обычно — 40 мин</option>
+                <option value="60">После плотной еды — 60 мин</option>
+                <option value="90">Очень медленно — 90 мин</option>
+              </select>
+            </label>
+            <label class="field"><span>Скорость выведения</span>
+              <select id="rate">
+                <option value="0.10">Медленная — 0,10 ‰/ч</option>
+                <option value="0.15" selected>Средняя — 0,15 ‰/ч</option>
+                <option value="0.20">Быстрая — 0,20 ‰/ч</option>
+              </select>
+            </label>
+            <label class="field"><span>Модель объёма</span>
+              <select id="model">
+                <option value="widmark" selected>Видмарка (вес, пол)</option>
+                <option value="watson">Watson (плюс рост и возраст)</option>
+              </select>
+            </label>
+            <label class="field"><span>Единицы</span>
+              <select id="units">
+                <option value="promille" selected>‰ (промилле)</option>
+                <option value="percent">% BAC</option>
+                <option value="breath">мг/л выдоха</option>
+              </select>
+            </label>
+          </div>
+          <p class="small muted" style="margin:10px 0 0">Значения сохраняются в профиле и используются на всех страницах.</p>
+        </details>
+      </div>
+
+      <div class="card">
+        <h2>Результат</h2>
+        <div id="result-metrics" class="result-hero"></div>
+        <div id="chart" class="chart-box"></div>
+        <ul id="breakdown" class="breakdown"></ul>
+        <p class="tiny muted" style="margin-top:14px">Оценка по формулам Видмарка/Watson и средней скорости выведения.
+          Индивидуальные значения могут отличаться в 1,5–2 раза: влияют печень, лекарства, усталость, еда и генетика.</p>
+      </div>
+    </div>
+  </section>
+  <section class="wrap section">
+    <div class="card">
+      <h2>Обратный расчёт: сколько можно, чтобы к поездке было 0,00</h2>
+      <p class="small muted">Укажите, во сколько нужно быть трезвым, и получите максимум спиртного, который успеет выйти.
+        Учитываются напитки, добавленные выше.</p>
+      <div class="form-grid">
+        <label class="field"><span>Быть трезвым к</span><input id="target-time" type="time" value="08:00"></label>
+        <label class="field"><span>День</span>
+          <select id="target-day"><option value="1" selected>Завтра</option><option value="0">Сегодня</option><option value="2">Через день</option></select>
+        </label>
+        <label class="field"><span>Порог</span>
+          <select id="target-threshold">
+            <option value="0" selected>0,00 ‰ (полное выведение)</option>
+            <option value="0.32">Порог прибора 0,16 мг/л</option>
+          </select>
+        </label>
+        <label class="field"><span>Запас времени, мин</span><input id="target-margin" type="number" min="0" max="360" step="15" value="60"></label>
+      </div>
+      <div id="reverse-result" class="result-hero" style="margin-top:16px"></div>
+      <p class="tiny muted" style="margin-top:12px">Даже при расчёте «0,00» остаётся риск: скорость выведения у людей различается,
+        приборы имеют погрешность. За руль — только при полной уверенности в трезвости.</p>
+    </div>
+  </section>
+
+  <section class="wrap section" style="padding-top:0">
+    <div class="card">
+      <h2>Что стоит сделать сейчас</h2>
+      <div id="advice" class="advice"></div>
+    </div>
+  </section>
+
+  <section class="wrap section" style="padding-top:0">
+    <div class="card">
+      <h2>Напоминания</h2>
+      <p class="small muted">Пока вкладка открыта, сайт напомнит уведомлением — если браузер разрешил уведомления.
+        Иначе напоминание появится прямо на странице.</p>
+      <div class="form-grid">
+        <label class="field"><span>Остановиться пить к</span><input id="rem-stop-time" type="time"></label>
+        <div class="field" style="justify-content:flex-end">
+          <button type="button" class="btn btn-sm" id="rem-stop-btn">Напомнить остановиться</button>
+        </div>
+        <label class="field"><span>Проверить трезвость в</span><input id="rem-check-time" type="time"></label>
+        <div class="field" style="justify-content:flex-end">
+          <button type="button" class="btn btn-ghost btn-sm" id="rem-check-btn">Напомнить проверку</button>
+        </div>
+      </div>
+      <ul id="rem-list" class="breakdown" style="margin-top:14px"></ul>
+      <p class="tiny muted" style="margin-top:10px">Время по умолчанию берётся из профиля: «ложусь» и «встаю».
+        Напоминание разовое — на сегодня.</p>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-cols">
+      <div>
+        <h3>Трезвометр</h3>
+        <p class="small">Расчёт концентрации алкоголя, дневник и контроль состояния. Все данные хранятся в вашем браузере
+          и никуда не отправляются.</p>
+      </div>
+      <div>
+        <h3>Инструменты</h3>
+        <div class="footer-links">
+          <a href="index.html">Калькулятор</a>
+          <a href="pro.html">Режим 0,00</a>
+          <a href="dnevnik.html">Дневник</a>
+          <a href="profil.html">Профиль</a>
+        </div>
+      </div>
+      <div>
+        <h3>Документы</h3>
+        <div class="footer-links">
+          <a href="baza-znaniy.html">База знаний</a>
+          <a href="o-proekte.html">О проекте</a>
+          <a href="politika.html">Политика</a>
+          <a href="disclaimer.html">Отказ от ответственности</a>
+        </div>
+      </div>
+    </div>
+    <p class="footer-disclaimer">18+. Сайт не является медицинским изделием и не заменяет консультацию врача.
+      Расчёт основан на усреднённых формулах (Видмарк, Watson) и ориентировочной скорости выведения алкоголя;
+      реальные значения индивидуальны и могут отличаться в разы. Никакое значение на сайте не означает,
+      что вы можете управлять транспортом: решение принимает только водитель, а проверку проводит прибор.</p>
+  </div>
+</footer>
+
+<script src="assets/config.js?v=1"></script>
+<script src="assets/engine.js?v=1"></script>
+<script src="assets/store.js?v=1"></script>
+<script src="assets/ui.js?v=1"></script>
+<script src="assets/advice.js?v=1"></script>
+<script src="assets/charts.js?v=1"></script>
+<script src="assets/reminders.js?v=1"></script>
+<script src="assets/calc.js?v=1"></script>
+</body>
+</html>
+
+

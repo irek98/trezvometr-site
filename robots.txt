@@ -1,0 +1,6 @@
+User-agent: *
+Disallow: /tests.html
+Disallow: /og-image.html
+Allow: /
+
+Sitemap: https://trezvometr.ru/sitemap.xml

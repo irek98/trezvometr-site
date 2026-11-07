@@ -1,0 +1,184 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#060c11">
+  <title>Режим «0,00» для профессионалов: расчёт с максимальным запасом</title>
+  <meta name="description" content="Строгий расчёт времени до полного выведения алкоголя: медленная скорость выведения, консервативная модель объёма распределения, запас по времени и три сценария — пессимистичный, ожидаемый, быстрый.">
+  
+  <!-- domain-block -->
+  <link rel="canonical" href="https://trezvometr.ru/pro.html">
+  <meta property="og:url" content="https://trezvometr.ru/pro.html">
+  <meta property="og:image" content="https://trezvometr.ru/assets/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://trezvometr.ru/assets/og-image.png">
+  <!-- /domain-block -->
+  <link rel="stylesheet" href="assets/style.css?v=1">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap header-row">
+    <a class="logo" href="index.html">
+      <svg class="logo-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <circle cx="16" cy="16" r="13" fill="none" stroke="#34d8b3" stroke-width="2.2" stroke-dasharray="60 22" stroke-linecap="round" transform="rotate(-90 16 16)"/>
+        <path d="M16 8.5c3.6 2.6 5.6 5.2 5.6 8a5.6 5.6 0 0 1-11.2 0c0-2.8 2-5.4 5.6-8z" fill="rgba(52,216,179,.22)" stroke="#34d8b3" stroke-width="1.6"/>
+      </svg>
+      <span>Трезвометр</span>
+    </a>
+    <nav class="nav" aria-label="Основная навигация">
+      <a href="index.html">Калькулятор</a>
+      <a href="pro.html">0,00 для профи</a>
+      <a href="dnevnik.html">Дневник</a>
+      <a href="profil.html">Профиль</a>
+      <a href="baza-znaniy.html">База знаний</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="wrap hero">
+    <h1>Режим «0,00»: расчёт с максимальным запасом</h1>
+    <p class="lead">Для тех, у кого ошибка стоит работы, прав или чужого здоровья: водители, машинисты, медики,
+      специалисты с допуском, предрейсовые и предсменные проверки.</p>
+    <div class="hero-badges">
+      <span class="chip chip-warn">Порог 0,00, а не 0,16 мг/л</span>
+      <span class="chip">Скорость выведения 0,10 ‰/ч</span>
+      <span class="chip chip-blue">Три сценария и запас времени</span>
+    </div>
+  </section>
+
+  <section class="wrap section" style="padding-top:8px">
+    <div class="card">
+      <h2>Чем этот режим отличается</h2>
+      <div class="grid grid-3">
+        <div class="stat"><div class="k">Скорость выведения</div><div class="v">0,10 ‰/ч</div>
+          <p class="small muted" style="margin:6px 0 0">Нижняя граница нормы вместо средних 0,15. Так считают для людей с медленным метаболизмом, заболеваниями печени и после 60 лет.</p></div>
+        <div class="stat"><div class="k">Модель объёма</div><div class="v">Watson</div>
+          <p class="small muted" style="margin:6px 0 0">Учитывает не только вес и пол, но и рост с возрастом. Для большинства даёт более высокую (то есть более осторожную) оценку концентрации.</p></div>
+        <div class="stat"><div class="k">Запас времени</div><div class="v">+20% и 1 час</div>
+          <p class="small muted" style="margin:6px 0 0">К расчётному времени добавляется 20% и минимум 60 минут: всасывание, индивидуальный разброс, погрешность прибора.</p></div>
+      </div>
+      <div class="note note-warn" style="margin-top:18px">
+        «0,00» — это математический ноль по модели, а не показание прибора. Следовые значения в выдохе возможны ещё
+        несколько часов после расчётного нуля. Решение о допуске к работе принимает медработник, а не сайт.
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap section" style="padding-top:0">
+    <div class="grid grid-2">
+      <div class="card">
+        <h2>Данные для расчёта</h2>
+        <p class="small muted">Профиль берётся со страницы <a href="profil.html">профиля</a>: пол, вес, рост, возраст
+          и ваша скорость выведения, если вы её откалибровали.</p>
+        <div class="form-grid">
+          <label class="field field-wide"><span>Напиток</span><select id="drink"></select></label>
+          <label class="field"><span>Порций</span><input id="count" type="number" min="1" max="20" step="1" value="1"></label>
+          <label class="field"><span>Объём порции, мл</span><input id="volume" type="number" min="10" max="2000" step="10" value="500"></label>
+          <label class="field"><span>Крепость, %</span><input id="abv" type="number" min="0.1" max="96" step="0.1" value="4.5"></label>
+          <label class="field"><span>Время</span><input id="when" type="time"></label>
+          <label class="field"><span>День</span>
+            <select id="day"><option value="0">Сегодня</option><option value="-1">Вчера</option></select>
+          </label>
+          <label class="field"><span>Допуск нужен к</span><input id="deadline" type="time" value="08:00"></label>
+          <label class="field"><span>День допуска</span>
+            <select id="deadline-day"><option value="1" selected>Завтра</option><option value="0">Сегодня</option><option value="2">Через день</option></select>
+          </label>
+        </div>
+        <div class="btn-row" style="margin-top:14px">
+          <button type="button" class="btn" id="add-drink">Добавить напиток</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="from-diary">Из дневника</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="reset-list">Очистить</button>
+        </div>
+        <ul id="drink-list" class="breakdown" style="margin-top:16px"></ul>
+      </div>
+
+      <div class="card">
+        <h2>Вердикт по времени</h2>
+        <div id="verdict" class="result-hero"></div>
+        <div id="chart" class="chart-box"></div>
+        <div class="table-wrap" style="margin-top:16px">
+          <table>
+            <thead><tr><th>Сценарий</th><th class="num">Скорость</th><th class="num">До 0,00</th><th class="num">Не раньше</th></tr></thead>
+            <tbody id="scenario-rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap section" style="padding-top:0">
+    <div class="card">
+      <h2>Частые вопросы</h2>
+      <details open><summary>Почему порог 0,00, а не 0,16 мг/л?</summary>
+        <p>0,16 мг/л — это не «разрешённая доза», а погрешность измерения, заложенная в законе. То есть значение,
+          ниже которого прибор обязан показывать ноль. Если ваша работа связана с допуском, ориентироваться на
+          эту границу рискованно: часть приборов и часть состояний дают разброс. Поэтому в режиме «0,00» мы считаем
+          до полного математического нуля.</p></details>
+      <details><summary>Откуда берётся запас в 20% и 1 час?</summary>
+        <p>Оценка складывается из четырёх неточностей: масса тела без учёта состава, скорость выведения (разброс
+          0,08–0,25 ‰/ч), время и полнота всасывания, погрешность формулы объёма распределения. Запас покрывает
+          случай, когда вы оказались в «медленной» части распределения по всем параметрам сразу.</p></details>
+      <details><summary>Что делать, если по расчёту я не успеваю?</summary>
+        <p>Единственный безопасный вариант — не пить или перенести поездку, смену, рейс. Ни кофе, ни холодный душ,
+          ни вода, ни сон по 4 часа не ускоряют работу ферментов: печень выводит этанол с почти постоянной
+          скоростью. Любые «ускорители» из интернета не работают.</p></details>
+      <details><summary>Как учитывать лекарства и состояние здоровья?</summary>
+        <p>Никак автоматически — и это ограничение сайта. Гепатит, цирроз, приём некоторых препаратов (в том числе
+          метронидазола, дисульфирама), беременность и возраст сильно меняют картину. При сомнениях считайте по
+          нижней границе 0,08 ‰/ч и добавляйте ещё несколько часов.</p></details>
+      <details><summary>Можно ли откалибровать расчёт по своему алкотестеру?</summary>
+        <p>Да, на странице <a href="profil.html">профиля</a>: внесите два-три замера с известным временем после
+          последнего напитка, и сайт предложит вашу скорость выведения. Помните, что бытовые приборы имеют
+          погрешность до ±0,1 мг/л.</p></details>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-cols">
+      <div>
+        <h3>Трезвометр</h3>
+        <p class="small">Расчёт концентрации алкоголя, дневник и контроль состояния. Все данные хранятся в вашем браузере
+          и никуда не отправляются.</p>
+      </div>
+      <div>
+        <h3>Инструменты</h3>
+        <div class="footer-links">
+          <a href="index.html">Калькулятор</a>
+          <a href="pro.html">Режим 0,00</a>
+          <a href="dnevnik.html">Дневник</a>
+          <a href="profil.html">Профиль</a>
+        </div>
+      </div>
+      <div>
+        <h3>Документы</h3>
+        <div class="footer-links">
+          <a href="baza-znaniy.html">База знаний</a>
+          <a href="o-proekte.html">О проекте</a>
+          <a href="politika.html">Политика</a>
+          <a href="disclaimer.html">Отказ от ответственности</a>
+        </div>
+      </div>
+    </div>
+    <p class="footer-disclaimer">18+. Сайт не является медицинским изделием и не заменяет консультацию врача.
+      Расчёт основан на усреднённых формулах (Видмарк, Watson) и ориентировочной скорости выведения алкоголя;
+      реальные значения индивидуальны и могут отличаться в разы. Никакое значение на сайте не означает,
+      что вы можете управлять транспортом или быть допущены к работе: решение принимает только водитель
+      и медработник, а проверку проводит прибор.</p>
+  </div>
+</footer>
+
+<script src="assets/config.js?v=1"></script>
+<script src="assets/engine.js?v=1"></script>
+<script src="assets/store.js?v=1"></script>
+<script src="assets/ui.js?v=1"></script>
+<script src="assets/charts.js?v=1"></script>
+<script src="assets/pro.js?v=1"></script>
+</body>
+</html>
+
