@@ -179,6 +179,8 @@
     renderResult();
     renderReverse();
     renderAdvice();
+    // Цель Метрики «расчёт»: не чаще раза в 30 секунд, только при наличии напитков.
+    if (state.entries.length && global.AL.Metrika) global.AL.Metrika.goalOnce('calc', 30000);
   }
 
   function addDrinkFromForm() {
@@ -234,6 +236,7 @@
         n++;
       });
       UI.toast(n ? 'Сохранено в дневник: ' + n : 'Эти записи уже в дневнике');
+      if (n && global.AL.Metrika) global.AL.Metrika.goal('diary-save');
     });
     ['#p-sex', '#p-weight', '#p-height', '#p-age'].forEach(function (sel) {
       UI.on(UI.qs(sel), 'input', recalc);

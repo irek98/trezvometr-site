@@ -88,6 +88,7 @@
     });
     var csv = '\ufeff' + rows.map(function (r) { return r.join(';'); }).join('\r\n');
     UI.download('trezvometr-dnevnik-' + UI.fmtDate(Date.now()).replace(/\./g, '-') + '.csv', csv, 'text/csv');
+    if (global.AL.Metrika) global.AL.Metrika.goal('export');
   }
 
   function addEntry() {

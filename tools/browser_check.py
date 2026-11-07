@@ -10,6 +10,7 @@
 """
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -108,6 +109,8 @@ def check_html():
         ok("HTML %s: og:image" % name,
            ('property="og:image" content="%s/assets/og-image.png"' % DOMAIN) in text,
            "")
+        ok("HTML %s: подключён счётчик Метрики" % name,
+           '<script src="assets/metrika.js?v=1"></script>' in text)
 
 
 def check_seo_files():
@@ -128,6 +131,17 @@ def check_seo_files():
     img = os.path.join(SITE, "assets", "og-image.png")
     size = png_size(img) if os.path.exists(img) else None
     ok("assets/og-image.png: 1200×630", size == (1200, 630), str(size))
+
+    mjs = read_text(os.path.join(SITE, "assets", "metrika.js"))
+    ok("metrika.js: Вебвизор выключен", "webvisor: false" in mjs)
+    ok("metrika.js: локальные хосты не считаются",
+       "'localhost'" in mjs and "'127.0.0.1'" in mjs and "'file:'" in mjs)
+    counter = re.search(r"metrikaId:\s*(\d+)", cfg)
+    ok("config.js: номер счётчика Метрики задан", bool(counter and int(counter.group(1)) > 0),
+       counter.group(1) if counter else "нет")
+    if counter and int(counter.group(1)) > 0:
+        ok("politika.html: номер счётчика совпадает с config",
+           counter.group(1) in read_text(os.path.join(SITE, "politika.html")), counter.group(1))
 
     for name in ("CNAME", ".nojekyll"):
         ok("деплой: есть %s" % name, os.path.exists(os.path.join(SITE, name)))
@@ -193,11 +207,15 @@ def main():
                     chart: !!document.querySelector('#chart svg'),
                     advice: document.querySelectorAll('#advice .advice-item').length,
                     reverse: document.querySelector('#reverse-result').innerText.replace(/\\s+/g, ' ').slice(0, 140),
-                    hasEngine: typeof window.AL === 'object' && !!window.AL.Engine
+                    hasEngine: typeof window.AL === 'object' && !!window.AL.Engine,
+                    metrikaOff: !!(window.AL && window.AL.Metrika) && window.AL.Metrika.on === false,
+                    ymAbsent: typeof window.ym === 'undefined'
                   };
                 })()
             """)
             ok("index: движок загружен", data and data.get("hasEngine"))
+            ok("index: метрика на localhost выключена", data and data.get("metrikaOff") is True)
+            ok("index: скрипт Метрики на localhost не грузится", data and data.get("ymAbsent") is True)
             ok("index: три метрики результата", data and data.get("metrics") == 3, str(data and data.get("metrics")))
             ok("index: напиток попал в список", data and data.get("listItems") == 1)
             ok("index: график построен", data and data.get("chart") is True)

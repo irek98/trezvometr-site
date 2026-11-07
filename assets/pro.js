@@ -135,6 +135,7 @@
   function recalc() {
     renderList();
     renderVerdict();
+    if (state.entries.length && global.AL.Metrika) global.AL.Metrika.goalOnce('pro-calc', 30000);
   }
 
   function bind() {
