@@ -70,6 +70,7 @@ class Balance(HTMLParser):
 
 DOMAIN = "https://trezvometr.ru"
 SERVICE_PAGES = {"tests.html", "og-image.html"}
+YANDEX_VERIFICATION = "53d8635f9bacb7ce"
 
 
 def read_text(path):
@@ -111,6 +112,8 @@ def check_html():
            "")
         ok("HTML %s: подключён счётчик Метрики" % name,
            '<script src="assets/metrika.js?v=1"></script>' in text)
+        ok("HTML %s: метатег подтверждения Яндекса" % name,
+           ('<meta name="yandex-verification" content="%s">' % YANDEX_VERIFICATION) in text)
 
 
 def check_seo_files():
