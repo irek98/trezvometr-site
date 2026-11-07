@@ -3,3 +3,6 @@ tools/_shots/
 tools/_tmp/
 __pycache__/
 *.pyc
+# Временные выгрузки gh/curl
+_*.json
+_*.txt
