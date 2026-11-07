@@ -38,6 +38,7 @@ tools/node_selftest.js  те же проверки формул без брау�
 tools/set_domain.py     домен в canonical/og:url/og:image, robots.txt, sitemap.xml (идемпотентно)
 tools/og_image.py       обложка для соцсетей: og-image.html → assets/og-image.png (1200×630)
 tools/deploy_check.py   проверка боевого сайта по сети: DNS, HTTPS, canonical, robots, sitemap, обложка
+tools/prod_smoke.py     прод в браузере: калькулятор считает, график, Метрика загрузилась и включена
 og-image.html       макет обложки 1200×630 (служебный, закрыт от индексации)
 CNAME, .nojekyll    домен для GitHub Pages и отключение Jekyll
 robots.txt, sitemap.xml, site.webmanifest
@@ -61,6 +62,7 @@ node tools\node_selftest.js       # 41 проверка формул без бр
 python tools\browser_check.py     # 94 проверки в headless Edge: HTML, JS-ошибки, интерактив, SEO, деплой-файлы
 python tools\screenshots.py       # PNG всех страниц в tools\_shots (визуальный контроль)
 python tools\deploy_check.py      # боевой сайт по сети: DNS, HTTPS, canonical, robots, sitemap, обложка
+python tools\prod_smoke.py        # прод в браузере: калькулятор, график, Метрика (6 проверок)
 ```
 
 `browser_check.py` и `screenshots.py` поднимают Edge в headless-режиме с **отдельным временным профилем**
@@ -87,8 +89,10 @@ python tools\deploy_check.py      # боевой сайт по сети: DNS, HT
 (`webvisor: false`): на сайте вводят вес и алкоголь, писать это нельзя. На `localhost`, `127.0.0.1`
 и `file://` счётчик не загружается — тесты и разработка не попадают в статистику.
 
-Вебмастер: сайт добавлен, права подтверждаются DNS-записью TXT
-`yandex-verification: 53d8635f9bacb7ce` (добавлена в зону Timeweb `_tools\_tw_dns_gh.py add-txt`).
+Вебмастер: сайт **подтверждён** 07.11.2026 (мета-тег `yandex-verification: 53d8635f9bacb7ce` на всех
+страницах; TXT-запись с тем же кодом тоже добавлена в зону Timeweb). Разделы «Индексирование» доступны;
+инструменты Sitemap и «Переобход» у Яндекса временно в режиме только для чтения (работы с 09.10.2026),
+поэтому `sitemap.xml` подхватится из `robots.txt` автоматически.
 
 Команды обновления сайта:
 
