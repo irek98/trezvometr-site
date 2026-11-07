@@ -51,7 +51,9 @@
     if (gL <= 0.8) return 'Лёгкое опьянение';
     if (gL <= 1.5) return 'Заметное опьянение';
     if (gL <= 2.5) return 'Сильное опьянение';
-    return 'Тяжёлое состояние — риск для здоровья';
+    if (gL <= 4) return 'Тяжёлое состояние — риск для здоровья';
+    // Линейная модель «досчитывает» и заведомо смертельные концентрации: предупреждаем прямо.
+    return 'Опасная для жизни концентрация — нужна скорая помощь (103/112)';
   }
 
   function metric(label, value, hint, cls) {
@@ -162,6 +164,17 @@
   function renderAdvice() {
     var box = UI.qs('#advice');
     var list = global.AL.Advice.build(state.entries, profile(), UI.opts());
+    // Линейная модель честно «досчитывает» и смертельные концентрации — предупреждаем отдельно.
+    if (lastSummary && state.entries.length && lastSummary.peakGL > 4) {
+      list.unshift({
+        level: 'stop',
+        title: 'Расчётная концентрация опасна для жизни',
+        text: 'По введённым напиткам максимум ' + E.format(lastSummary.peakGL, UI.units()) +
+              '. При таких значениях возможны потеря сознания и остановка дыхания. Если это не учебный ' +
+              'расчёт, а реальная ситуация — нужна помощь: 103 или 112. Значения выше 4–5 ‰ модель считает ' +
+              'по инерции и показывает для наглядности, а не как «сколько человек выдержит».'
+      });
+    }
     box.innerHTML = list.map(function (a) {
       return '<div class="advice-item ' + a.level + '"><h3>' + a.title + '</h3><p>' + a.text + '</p></div>';
     }).join('');
