@@ -4,8 +4,13 @@
 //   концентрация, г/л  = граммы / объём_распределения(л)
 //     Видмарк: Vd = вес × r,  r = 0,68 (муж) / 0,55 (жен) / 0,615 (не указан)
 //     Watson:  Vd = TBW × 0,8 (учитывает возраст и рост; оценка выше — консервативнее)
-//   кривая: подъём до пика за peakMinutes, затем линейное падение eliminationRate г/л в час
-//   несколько напитков складываются (суперпозиция) — приближение, но объяснимое
+//   кривая: всасывание линейно за peakMinutes, затем выведение с постоянной скоростью
+//     eliminationRate г/л в час. Скорость выведения — ОДНА на весь организм (кинетика
+//     нулевого порядка: печень за час перерабатывает примерно одинаковое количество спирта),
+//     а не отдельная на каждый напиток. Поэтому 20 стопок дают в 20 раз более высокий пик
+//     и в 20 раз более долгое выведение, чем одна стопка.
+//     Считается поминутно (simulate), а не «кривая на каждый напиток»: иначе время до нуля
+//     не зависело бы от количества выпитого.
 // Единицы: 1 г/л = 1 ‰ (промилле) = 0,1 % BAC; мг/л выдоха ≈ г/л крови / 2,0
 (function (global) {
   'use strict';
@@ -100,73 +105,132 @@
     };
   }
 
-  // Вклад одного напитка в момент tMin (минуты от начала)
-  function drinkAt(tMin, t0Min, peakBac, rate, peakMinutes) {
-    var dt = tMin - t0Min;
-    if (dt <= 0) return 0;
-    if (dt < peakMinutes) return peakBac * (dt / peakMinutes);
-    return Math.max(0, peakBac - rate * ((dt - peakMinutes) / 60));
+  // Предохранитель: не считаем дольше 30 суток (защита от сотни порций в дневнике).
+  var MAX_MINUTES = 60 * 24 * 30;
+
+  // Одна точка кривой в нужном формате.
+  function pointOf(series, t) {
+    var gL = series[t] || 0;
+    return { tMin: t, gL: gL, breath: gL / BLOOD_BREATH, percent: gL / 10 };
   }
 
-  // Полная кривая: { points:[{tMin,gL,breath,percent}], t0, zeroMin, peakMin, peakGL, totalGrams }
-  function curve(entries, profile, opts) {
-    var list = (entries || []).map(normalize).filter(Boolean);
-    if (!list.length) {
-      return { points: [], t0: 0, zeroMin: 0, peakMin: 0, peakGL: 0, totalGrams: 0,
-               opts: resolveOpts(profile, opts), vd: distributionVolume(profile || {}, (opts || {}).model || 'widmark') };
-    }
+  // Поминутная модель концентрации: { series:[gL по минутам от t0], t0, vd, opts, totalGrams }
+  // Всасывание — линейно за peakMinutes, выведение — постоянная скорость на весь организм.
+  // untilMin ограничивает расчёт (нужно для «сколько сейчас в крови» и недельной статистики).
+  function simulate(entries, profile, opts, untilMin) {
     var o = resolveOpts(profile, opts);
+    var peakMin = Math.max(1, o.peakMinutes);
+    var list = (entries || []).map(normalize).filter(Boolean);
     var vd = distributionVolume(profile || {}, o.model);
+    var totalGrams = list.reduce(function (s, e) { return s + e.grams; }, 0);
+    var res = { series: [0], t0: 0, vd: vd, opts: o, totalGrams: totalGrams };
+    if (!list.length) return res;
     var t0Ms = Math.min.apply(null, list.map(function (e) { return e.tMs; }));
-    var items = list.map(function (e) {
-      return { t0Min: (e.tMs - t0Ms) / 60000, peakBac: e.grams / vd, grams: e.grams };
+    var firstStart = Infinity, lastStart = 0, sumPeak = 0;
+    var drinks = list.map(function (e) {
+      var start = (e.tMs - t0Ms) / 60000;
+      var peakBac = e.grams / vd;
+      if (start < firstStart) firstStart = start;
+      if (start > lastStart) lastStart = start;
+      sumPeak += peakBac;
+      return { start: start, end: start + peakMin, step: peakBac / peakMin };
     });
-    var lastMin = 0;
-    items.forEach(function (it) {
-      var end = it.t0Min + o.peakMinutes + (it.peakBac / o.rate) * 60;
-      if (end > lastMin) lastMin = end;
-    });
-    var points = [], peakMin = 0, peakGL = 0;
-    for (var t = 0; t <= lastMin + o.stepMin; t += o.stepMin) {
-      var gL = 0;
-      for (var i = 0; i < items.length; i++) {
-        gL += drinkAt(t, items[i].t0Min, items[i].peakBac, o.rate, o.peakMinutes);
-      }
-      points.push({ tMin: t, gL: gL, breath: gL / BLOOD_BREATH, percent: gL / 10 });
-      if (gL > peakGL) { peakGL = gL; peakMin = t; }
+    var elimStart = firstStart + peakMin;                        // выведение — после пика первой дозы
+    var naturalEnd = lastStart + peakMin + (sumPeak / o.rate) * 60;
+    var limit = Math.ceil(naturalEnd) + 1;
+    if (untilMin !== undefined && isFinite(Number(untilMin))) {
+      limit = Math.min(limit, Math.max(1, Math.ceil(num(untilMin, 0))));
     }
+    limit = Math.max(1, Math.min(limit, MAX_MINUTES));
+    var bac = 0, series = [0];
+    for (var t = 1; t <= limit; t++) {
+      for (var i = 0; i < drinks.length; i++) {
+        var d = drinks[i];
+        if (t > d.start && t <= d.end) bac += d.step;             // всасывание за эту минуту
+      }
+      if (t > elimStart) bac -= o.rate / 60;                      // выведение — одно на всех
+      if (bac < 0) bac = 0;
+      series.push(bac);
+    }
+    res.series = series;
+    res.t0 = t0Ms;
+    return res;
+  }
+
+  // Точки кривой с шагом stepMin (для графиков и недельной статистики)
+  function seriesPoints(entries, profile, opts, stepMin, untilMin) {
+    var sim = simulate(entries, profile, opts, untilMin);
+    var step = Math.max(1, Math.round(num(stepMin, 15)));
+    var out = [];
+    for (var t = 0; t < sim.series.length; t += step) out.push(pointOf(sim.series, t));
+    var last = sim.series.length - 1;
+    if (!out.length || out[out.length - 1].tMin !== last) out.push(pointOf(sim.series, last));
+    return out;
+  }
+
+
+  // Полная кривая: { points:[{tMin,gL,breath,percent}], series, t0, zeroMin, peakMin, peakGL, totalGrams }
+  // points — прорежены для графика (не больше ~300 точек), series — поминутно.
+  function curve(entries, profile, opts) {
+    var sim = simulate(entries, profile, opts);
+    var o = sim.opts;
+    var series = sim.series;
+    var n = series.length;
+    if (n < 2) {
+      return { points: [], series: series, t0: 0, zeroMin: 0, peakMin: 0, peakGL: 0,
+               totalGrams: 0, opts: o, vd: sim.vd, stepMin: o.stepMin };
+    }
+    var peakGL = 0, peakMin = 0, zeroMin = n - 1, t;
+    for (t = 0; t < n; t++) {
+      if (series[t] > peakGL) { peakGL = series[t]; peakMin = t; }
+    }
+    for (t = peakMin; t < n; t++) {
+      if (series[t] <= 0) { zeroMin = t; break; }
+    }
+    var stepMin = Math.max(1, Math.round(num(o.stepMin, 5)), Math.ceil((n - 1) / 300));
+    var points = [];
+    for (t = 0; t < n - 1; t += stepMin) points.push(pointOf(series, t));
+    points.push(pointOf(series, peakMin));
+    points.push(pointOf(series, zeroMin));
+    points.sort(function (a, b) { return a.tMin - b.tMin; });
+    var uniq = [];
+    points.forEach(function (p) {
+      if (!uniq.length || uniq[uniq.length - 1].tMin !== p.tMin) uniq.push(p);
+    });
     return {
-      points: points, t0: t0Ms, zeroMin: lastMin, peakMin: peakMin, peakGL: peakGL,
-      totalGrams: items.reduce(function (s, it) { return s + it.grams; }, 0),
-      opts: o, vd: vd
+      points: uniq, series: series, t0: sim.t0, zeroMin: zeroMin, peakMin: peakMin, peakGL: peakGL,
+      totalGrams: sim.totalGrams, opts: o, vd: sim.vd, stepMin: stepMin
     };
   }
 
-  // Концентрация в момент tMin (минуты от первой записи)
+  // Концентрация в момент tMin (минуты от первой записи). Время дробное —
+  // между минутами интерполируем, иначе напиток, добавленный «только что», показывал бы 0.
   function bacAtMin(entries, profile, opts, tMin) {
     var list = (entries || []).map(normalize).filter(Boolean);
     if (!list.length) return 0;
-    var o = resolveOpts(profile, opts);
-    var vd = distributionVolume(profile || {}, o.model);
-    var t0Ms = Math.min.apply(null, list.map(function (e) { return e.tMs; }));
-    var total = 0;
-    list.forEach(function (e) {
-      total += drinkAt(tMin, (e.tMs - t0Ms) / 60000, e.grams / vd, o.rate, o.peakMinutes);
-    });
-    return total;
+    var t = Math.max(0, num(tMin, 0));
+    var lo = Math.floor(t);
+    if (lo === t) {
+      if (t === 0) return 0;
+      var exact = simulate(entries, profile, opts, t).series;
+      return exact[Math.min(t, exact.length - 1)] || 0;
+    }
+    var series = simulate(entries, profile, opts, lo + 1).series;
+    var a = series[Math.min(lo, series.length - 1)] || 0;
+    var b = series[Math.min(lo + 1, series.length - 1)] || 0;
+    return a + (b - a) * (t - lo);
   }
 
-  // Когда концентрация упадёт до порога (после пика). Минуты от первой записи.
+  // Когда концентрация впервые упадёт до порога (после пика). Минуты от первой записи.
   function timeToThreshold(cur, thresholdGL) {
-    var pts = cur.points || [];
-    if (!pts.length) return 0;
+    var series = (cur && cur.series) || [];
+    if (series.length < 2) return 0;
     var th = num(thresholdGL, 0);
-    if (cur.peakGL <= th) return cur.peakMin;
-    // последний замер, который ещё выше порога: его время и берём (осторожная оценка)
-    for (var i = pts.length - 1; i > 0; i--) {
-      if (pts[i].tMin > cur.peakMin && pts[i].gL > th) return pts[i].tMin;
+    if (cur.peakGL <= th) return cur.peakMin;   // пик ниже порога — он и так не превышен
+    for (var t = cur.peakMin; t < series.length; t++) {
+      if (series[t] <= th) return t;
     }
-    return cur.zeroMin;
+    return series.length - 1;
   }
 
   // Итог расчёта: пик, ноль, пороги, «не ранее чем» с запасом
@@ -196,7 +260,8 @@
   }
 
   // Сколько спирта можно добавить сейчас, чтобы к targetMs быть не выше thresholdGL.
-  // Возвращает { grams, standardDrinks, minutesAhead, existingAtTarget, feasible }
+  // Возвращает { grams, standardDrinks, minutesAhead, existingAtTarget, feasible, reason }
+  // reason: 'ok' | 'not-clear' (к сроку ещё не трезв — пить нельзя) | 'too-early' (меньше пика)
   function maxNow(entries, profile, opts, targetMs, thresholdGL) {
     var o = resolveOpts(profile, opts);
     var th = num(thresholdGL, 0);
@@ -204,28 +269,30 @@
     var nowMs = Date.now();
     var minutesAhead = Math.max(0, (Number(targetMs) - nowMs) / 60000);
     var vd = distributionVolume(profile || {}, o.model);
-    if (minutesAhead <= o.peakMinutes) {
-      return { grams: 0, standardDrinks: 0, minutesAhead: minutesAhead,
-               existingAtTarget: 0, feasible: false, vd: vd };
-    }
+    var res = { grams: 0, standardDrinks: 0, minutesAhead: minutesAhead,
+                existingAtTarget: 0, feasible: false, vd: vd, reason: 'too-early' };
+    if (minutesAhead <= o.peakMinutes) return res;
     var existingAtTarget = 0;
     if (list.length) {
       var t0Ms = Math.min.apply(null, list.map(function (e) { return e.tMs; }));
-      var tTarget = (nowMs + minutesAhead * 60000 - t0Ms) / 60000;
-      list.forEach(function (e) {
-        existingAtTarget += drinkAt(tTarget, (e.tMs - t0Ms) / 60000, e.grams / vd, o.rate, o.peakMinutes);
-      });
+      existingAtTarget = bacAtMin(list, profile, opts,
+                                  (nowMs + minutesAhead * 60000 - t0Ms) / 60000);
     }
-    var room = th + o.rate * ((minutesAhead - o.peakMinutes) / 60) - existingAtTarget;
-    var g = Math.max(0, room * vd);
-    return {
-      grams: g,
-      standardDrinks: g / 10,
-      minutesAhead: minutesAhead,
-      existingAtTarget: existingAtTarget,
-      feasible: g > 0.5,
-      vd: vd
-    };
+    res.existingAtTarget = existingAtTarget;
+    // К сроку концентрация ещё выше порога — любая новая доза только добавит.
+    // Ровно на пороге (в том числе 0,00) пить можно ровно столько, сколько успеет выйти.
+    if (existingAtTarget > th + 1e-9) {
+      res.reason = 'not-clear';
+      return res;
+    }
+    // Сколько новая доза успеет вывестись к сроку и при этом остаться в пределах порога
+    var k = o.rate * (minutesAhead - o.peakMinutes) / 60;
+    var g = vd * (th - existingAtTarget + k);
+    res.grams = g;
+    res.standardDrinks = g / 10;
+    res.feasible = g > 0.5;
+    res.reason = 'ok';
+    return res;
   }
 
   // ---------- Единицы ----------
@@ -264,7 +331,8 @@
     bacFromGrams: bacFromGrams,
     normalize: normalize,
     resolveOpts: resolveOpts,
-    drinkAt: drinkAt,
+    simulate: simulate,
+    series: seriesPoints,
     curve: curve,
     bacAtMin: bacAtMin,
     timeToThreshold: timeToThreshold,

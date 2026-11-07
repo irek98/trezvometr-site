@@ -6,6 +6,7 @@
   var S = global.AL.Store;
 
   var state = { entries: [] };
+  var lastSummary = null;   // итог последнего расчёта — нужен обратному расчёту для времени нуля
 
   function profile() { return S.get().profile; }
 
@@ -65,6 +66,7 @@
     var box = UI.qs('#result-metrics');
     var units = UI.units();
     var sum = E.summary(state.entries, p, opts);
+    lastSummary = sum;
 
     if (!state.entries.length) {
       box.innerHTML = metric('Сейчас в крови', '—', 'Добавьте напиток слева') +
@@ -81,11 +83,11 @@
     box.innerHTML =
       metric('Сейчас в крови', E.format(sum.nowGL, units), zoneText(sum.nowGL),
              sum.nowGL > 1.5 ? 'metric-stop' : (sum.nowGL > 0.32 ? 'metric-warn' : '')) +
-      metric('До 0,00', E.duration(sum.zeroMin).text,
-             'по расчёту в ' + zeroClock + (zeroMs > Date.now() ? ' · ' + UI.relative(zeroMs) : ''),
+      metric('До 0,00 ‰', E.duration(sum.zeroMin).text,
+             'полное выведение, по расчёту в ' + zeroClock + (zeroMs > Date.now() ? ' · ' + UI.relative(zeroMs) : ''),
              'metric-accent') +
       metric('Ниже порога прибора', E.duration(sum.legalMin).text,
-             'около ' + legalClock + ' · 0,16 мг/л (0,32 ‰) — погрешность прибора, а не разрешение');
+             'около ' + legalClock + ' · 0,16 мг/л (0,30 ‰) — погрешность прибора, а не разрешение');
 
     global.AL.Charts.line(UI.qs('#chart'), sum.curve.points, {
       t0: sum.curve.t0,
@@ -94,9 +96,10 @@
     });
 
     var std = UI.standard();
+    var st = E.STANDARDS[std] || E.STANDARDS.ru;
     UI.qs('#breakdown').innerHTML =
-      '<li><span>Всего спирта</span><b>' + UI.num(sum.totalGrams, 1) + ' г · ' +
-        UI.num(E.toStandardDrinks(sum.totalGrams, std), 1) + ' ст. дозы</b></li>' +
+      '<li><span>Всего чистого спирта</span><b>' + UI.num(sum.totalGrams, 1) + ' г · ' +
+        UI.num(E.toStandardDrinks(sum.totalGrams, std), 1) + ' станд. доз (1 = ' + st.grams + ' г)</b></li>' +
       '<li><span>Максимум в крови</span><b>' + E.format(sum.peakGL, units) + ' в ' +
         UI.fmtTime(sum.curve.t0 + sum.peakMin * 60000) + '</b></li>' +
       '<li><span>Скорость выведения</span><b>' + UI.num(sum.opts.rate, 2) + ' ‰/ч</b></li>' +
@@ -108,6 +111,7 @@
   function renderReverse() {
     var p = profile();
     var opts = UI.opts();
+    var units = UI.units();
     var targetTime = UI.qs('#target-time').value || '08:00';
     var dayOffset = Number(UI.qs('#target-day').value);
     if (!isFinite(dayOffset)) dayOffset = 1;
@@ -122,24 +126,36 @@
     var st = E.STANDARDS[std] || E.STANDARDS.ru;
     var drinksStd = res.grams / st.grams;
     var beers = res.grams / E.grams(500, 4.5); // эквивалент в бокалах пива 0,5 л по 4,5%
+    var thText = threshold === 0 ? '0,00 ‰' : E.format(threshold, units);
 
     if (Date.now() > effectiveMs) {
       box.innerHTML = metric('Время уже прошло', '—', 'Выберите время в будущем', 'metric-warn');
       return;
     }
-    if (!res.feasible) {
+    if (res.reason === 'too-early') {
       box.innerHTML =
-        metric('Максимум спиртного', 'нет запаса', 'До ' + UI.fmtTime(targetMs) + ' остаётся меньше ' +
-               opts.peakMinutes + ' мин — новая доза не успеет выйти', 'metric-warn') +
-        metric('Выведено к сроку', '—', 'Оценка по добавленным напиткам');
+        metric('Максимум спиртного', 'нет запаса', 'До ' + UI.fmtTime(targetMs) +
+               ' меньше ' + opts.peakMinutes + ' мин: доза не успеет всосаться и выйти', 'metric-warn') +
+        metric('Порог к сроку', thText, 'при выведении ' + UI.num(opts.rate, 2) + ' ‰/ч');
+      return;
+    }
+    if (res.reason === 'not-clear') {
+      var zeroMs = lastSummary && lastSummary.curve.t0
+        ? lastSummary.curve.t0 + lastSummary.zeroMin * 60000 : 0;
+      box.innerHTML =
+        metric('Максимум спиртного', '0 г — пить нельзя',
+               'К ' + UI.fmtTime(targetMs) + ' по расчёту останется ' + E.format(res.existingAtTarget, units) +
+               ', а нужно ' + thText, 'metric-stop') +
+        metric('Ноль по расчёту', zeroMs ? UI.fmtDateTime(zeroMs) : '—',
+               'по уже добавленным напиткам; каждая новая доза отодвигает этот срок', 'metric-warn');
       return;
     }
     box.innerHTML =
       metric('Максимум чистого спирта', UI.num(res.grams, 0) + ' г',
-             'успеет выйти до ' + UI.fmtTime(targetMs) + ' с запасом ' + margin + ' мин', 'metric-accent') +
-      metric('Это примерно', UI.num(drinksStd, 1) + ' ст. дозы',
+             'успеет выйти к ' + UI.fmtTime(targetMs) + ' с запасом ' + margin + ' мин', 'metric-accent') +
+      metric('Это примерно', UI.num(drinksStd, 1) + ' станд. доз',
              'или ' + Math.max(0, Math.floor(beers)) + ' бокала пива 0,5 л по 4,5%') +
-      metric('Порог к сроку', threshold === 0 ? '0,00 ‰' : '0,32 ‰',
+      metric('Порог к сроку', thText,
              'при выведении ' + UI.num(opts.rate, 2) + ' ‰/ч');
   }
 
@@ -158,7 +174,16 @@
       box.innerHTML = '<li class="muted small">Список пуст. Добавьте напиток — расчёт появится сразу.</li>';
       return;
     }
-    box.innerHTML = state.entries.map(function (e, i) {
+    // Длинный список (20 порций) не разворачиваем целиком: показываем последние записи,
+    // расчёт при этом учитывает все.
+    var MAX_ROWS = 8;
+    var start = Math.max(0, state.entries.length - MAX_ROWS);
+    var rows = state.entries.slice(start);
+    var head = start > 0
+      ? '<li class="muted small">… и ещё ' + start + ' записей выше — в расчёте учтены все</li>'
+      : '';
+    box.innerHTML = head + rows.map(function (e, k) {
+      var i = start + k;
       return '<li><span>' + UI.fmtDateTime(e.tMs) + ' · ' + entryLabel(e) +
         ' ' + (e.volumeMl ? e.volumeMl + ' мл' : '') + (e.abv ? ' · ' + UI.num(e.abv, 1) + '%' : '') +
         '</span><b>' + UI.num(e.grams, 1) + ' г · ' +

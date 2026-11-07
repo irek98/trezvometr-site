@@ -34,17 +34,15 @@
     }
     var totalGrams = perDay.reduce(function (s, d) { return s + d.grams; }, 0);
     var dryDays = perDay.filter(function (d) { return d.grams < 1; }).length;
-    // часы выше порога прибора — по кривой, шаг 15 минут
+    // часы выше порога прибора — по поминутной кривой, выборка каждые 15 минут
     var hoursAbove = 0;
     if (list.length) {
       var legal = cfgVal('thresholds.legalBloodGL', 0.32);
       var opts = global.AL.UI.opts();
-      var firstMs = Math.min.apply(null, list.map(function (e) { return e.tMs; }));
-      for (var t = 0; t < n * 24 * 60; t += 15) {
-        var at = from + t * 60000;
-        var gL = E.bacAtMin(list, S.get().profile, opts, (at - firstMs) / 60000);
-        if (gL > legal) hoursAbove += 0.25;
-      }
+      var pts = E.series(list, S.get().profile, opts, 15, n * 24 * 60);
+      pts.forEach(function (p) {
+        if (p.gL > legal) hoursAbove += 0.25;
+      });
     }
     return {
       days: n,

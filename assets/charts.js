@@ -27,8 +27,10 @@
                ' L' + x(0).toFixed(1) + ' ' + y(0).toFixed(1) + ' Z';
 
     var hours = Math.ceil(maxT / 60);
+    // подписи не чаще, чем ~9 штук: на длинной кривой (41 ч) иначе каша
+    var tickStep = Math.max(1, Math.ceil(hours / 8));
     var ticks = '';
-    for (var h = 0; h <= hours; h++) {
+    for (var h = 0; h <= hours; h += tickStep) {
       var tMin = Math.min(h * 60, maxT);
       var label = o.t0 ? global.AL.UI.fmtTime(o.t0 + tMin * 60000) : h + ' ч';
       ticks += '<line x1="' + x(tMin) + '" y1="' + (H - padB) + '" x2="' + x(tMin) + '" y2="' + (H - padB + 5) +

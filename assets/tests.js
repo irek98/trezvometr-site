@@ -46,7 +46,19 @@
   eq('Пик концентрации = 0,784 ‰', sum.peakGL, 40 / 51, 0.002);
   eq('Пик наступает через 40 минут', sum.peakMin, 40, 1);
   eq('Полное выведение ≈ 354 мин', sum.zeroMin, 354, 6);
-  eq('Порог 0,32 ‰ ≈ 226 мин', sum.legalMin, 226, 8);
+  eq('Порог 0,30 ‰ ≈ 234 мин', sum.legalMin, 234, 4);
+
+  // ---------- 4b. Количество выпитого удлиняет выведение ----------
+  var oneShot = [{ tMs: t0, grams: E.grams(50, 40) }];
+  var manyShots = [];
+  for (var s = 0; s < 20; s++) manyShots.push({ tMs: t0, grams: E.grams(50, 40) });
+  var sumOne = E.summary(oneShot, man75, opts);
+  var sumMany = E.summary(manyShots, man75, opts);
+  eq('20 стопок: всего 315,6 г', sumMany.totalGrams, 315.6, 0.2);
+  eq('20 стопок: пик в 20 раз выше одной', sumMany.peakGL / sumOne.peakGL, 20, 0.2);
+  eq('20 стопок: ноль ≈ 2516 мин (41 ч 56 мин)', sumMany.zeroMin, 2516, 6);
+  check('20 стопок: выведение дольше, чем у одной, более чем в 10 раз',
+        sumMany.zeroMin > sumOne.zeroMin * 10);
 
   // ---------- 5. Сумма напитков ----------
   var two = [{ tMs: t0, grams: 20 }, { tMs: t0 + 1800000, grams: 20 }];
@@ -63,6 +75,13 @@
   eq('При скорости 0,10 ‰/ч — 37,4 г', revSlow.grams, 37.4, 2);
   var revNo = E.maxNow([], man75, opts, Date.now() + 20 * 60000, 0);
   check('За 20 минут запаса нет', revNo.feasible === false);
+  // если к сроку ещё не трезв — обратный расчёт не должен «дарить» граммы
+  var revAfter20 = E.maxNow(manyShots, man75, opts, Date.now() + 8 * 3600000, 0);
+  eq('После 20 стопок через 8 ч можно 0 г', revAfter20.grams, 0, 0.5);
+  check('Причина: к сроку ещё не трезв', revAfter20.reason === 'not-clear');
+  eq('Остаток к сроку ≈ 4,94 ‰', revAfter20.existingAtTarget, 4.94, 0.05);
+  var revClear = E.maxNow([], man75, opts, Date.now() + 8 * 3600000, 0);
+  check('Ровно на нуле пить можно столько, сколько успеет выйти', revClear.reason === 'ok' && revClear.feasible);
 
   // ---------- 7. Единицы ----------
   eq('0,32 ‰ = 0,16 мг/л выдоха', E.toBreath(0.32), 0.16);
