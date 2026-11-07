@@ -4,7 +4,9 @@
 профессионалов, профиль, дневник, база знаний. Без бэкенда, без аккаунтов — всё считается и хранится
 в браузере (`localStorage`).
 
-Рабочее имя и домен — заглушки: меняются в одном файле.
+Домен: **trezvometr.ru** (куплен 07.11.2026 в Timeweb, оплачен до 07.11.2027). Сайт опубликован
+на GitHub Pages из репозитория `irek98/trezvometr-site`; адреса в `assets/config.js`, `sitemap.xml`,
+canonical и `og:*` уже прописаны — переезд на другой домен делается скриптом `tools/set_domain.py`.
 
 ## Структура
 
@@ -31,6 +33,11 @@ assets/diary.js     логика дневника
 assets/profile.js   логика профиля и калибровки
 assets/tests.js     сами тесты (выполняются в tests.html)
 tools/node_selftest.js  те же проверки формул без браузера (node)
+tools/set_domain.py     домен в canonical/og:url/og:image, robots.txt, sitemap.xml (идемпотентно)
+tools/og_image.py       обложка для соцсетей: og-image.html → assets/og-image.png (1200×630)
+tools/deploy_check.py   проверка боевого сайта по сети: DNS, HTTPS, canonical, robots, sitemap, обложка
+og-image.html       макет обложки 1200×630 (служебный, закрыт от индексации)
+CNAME, .nojekyll    домен для GitHub Pages и отключение Jekyll
 robots.txt, sitemap.xml, site.webmanifest
 ```
 
@@ -49,8 +56,9 @@ python -m http.server 8081
 ```
 python -m http.server 8081        # затем http://localhost:8081/tests.html
 node tools\node_selftest.js       # 41 проверка формул без браузера, код возврата 1 при провале
-python tools\browser_check.py     # 56 проверок в headless Edge: HTML, JS-ошибки, интерактив, тесты
+python tools\browser_check.py     # 94 проверки в headless Edge: HTML, JS-ошибки, интерактив, SEO, деплой-файлы
 python tools\screenshots.py       # PNG всех страниц в tools\_shots (визуальный контроль)
+python tools\deploy_check.py      # боевой сайт по сети: DNS, HTTPS, canonical, robots, sitemap, обложка
 ```
 
 `browser_check.py` и `screenshots.py` поднимают Edge в headless-режиме с **отдельным временным профилем**
@@ -61,15 +69,28 @@ python tools\screenshots.py       # PNG всех страниц в tools\_shots 
 вложенность HTML на всех страницах, отсутствие ошибок JavaScript, работа калькулятора, режима «0,00»,
 дневника, профиля и калибровки.
 
-## Перед запуском на реальном домене
+## Публикация (сделана 07.11.2026)
 
-1. `assets/config.js` — `name`, `site`, контакты, при необходимости `metrikaId`.
-2. Убрать `<meta name="robots" content="noindex,nofollow">` со всех страниц (сейчас стоит специально:
-   тестовый домен не должен попасть в индекс).
-3. В `sitemap.xml` заменить `https://example.ru` на реальный домен.
-4. На главной добавить `<link rel="canonical">` и `og:*` с реальным адресом (заготовка в `<head>`).
-5. Публикация — GitHub Pages, как у chekhub: репозиторий, `CNAME` с доменом, `git push`, HTTPS
-   включается автоматически.
+| Что | Значение |
+|---|---|
+| Репозиторий | `github.com/irek98/trezvometr-site` (ветка `main`, GitHub Pages из корня) |
+| Домен | `trezvometr.ru` (файл `CNAME`), регистратор Timeweb, оплачен до 07.11.2027 |
+| DNS у Timeweb | 4 A-записи `185.199.108–111.153` + `CNAME www → irek98.github.io`, AAAA и парковочные адреса удалены, MX и SPF Timeweb оставлены |
+| Индексация | `noindex` снят со всех страниц, служебные `tests.html` и `og-image.html` закрыты (`robots.txt` + meta) |
+| Проверка | `python tools\deploy_check.py` — DNS, редиректы, TLS, canonical всех страниц, robots, sitemap, обложка |
+
+Команды обновления сайта:
+
+```
+git add -A; git commit -m "..." ; git push        # Pages пересобирает за 1–2 минуты
+python tools\set_domain.py                       # если меняется домен (canonical, og, robots, sitemap)
+python tools\og_image.py                         # перерисовать обложку после смены заголовков
+python tools\deploy_check.py                     # проверить прод
+```
+
+Первый выпуск HTTPS-сертификата GitHub делает сам после появления DNS (15–60 минут); когда
+`https_certificate` в `gh api repos/irek98/trezvometr-site/pages` заполнится — включить
+`https_enforced` (галочка «Enforce HTTPS»).
 
 ## Что уже работает
 
