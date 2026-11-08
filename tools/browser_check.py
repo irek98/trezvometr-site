@@ -105,6 +105,8 @@ def check_html():
         ok("HTML %s: открыт для индексации" % name, "noindex" not in text)
         ok("HTML %s: canonical на домен" % name,
            ('rel="canonical" href="%s' % DOMAIN) in text)
+        ok("HTML %s: подключён favicon" % name,
+           '<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">' in text)
         ok("HTML %s: og:url на домен" % name,
            ('property="og:url" content="%s' % DOMAIN) in text)
         ok("HTML %s: og:image" % name,
@@ -134,6 +136,9 @@ def check_seo_files():
     img = os.path.join(SITE, "assets", "og-image.png")
     size = png_size(img) if os.path.exists(img) else None
     ok("assets/og-image.png: 1200×630", size == (1200, 630), str(size))
+
+    fav = os.path.join(SITE, "assets", "favicon.svg")
+    ok("assets/favicon.svg: файл есть", os.path.exists(fav), "нет файла" if not os.path.exists(fav) else "")
 
     mjs = read_text(os.path.join(SITE, "assets", "metrika.js"))
     ok("metrika.js: Вебвизор выключен", "webvisor: false" in mjs)
@@ -175,6 +180,9 @@ def open_page(url, console_js=None):
     tab.send("Runtime.enable")
     tab.send("Log.enable")
     tab.send("Page.enable")
+    # Кэш выключен: проверки должны видеть текущие файлы, а не версию из кэша Edge.
+    tab.send("Network.enable")
+    tab.send("Network.setCacheDisabled", {"cacheDisabled": True})
     tab.wait_ready()
     time.sleep(0.6)
     errors = []
@@ -391,6 +399,46 @@ def main():
         for page in ("baza-znaniy.html", "o-proekte.html", "politika.html", "disclaimer.html"):
             errors = open_page(BASE + "/" + page)
             ok("%s: нет ошибок JS" % page, not errors, "; ".join(errors))
+
+        # --- мобильная вёрстка 390 px: нет горизонтальной прокрутки и обрезанного меню ---
+        def mobile_js(tab):
+            tab.send("Emulation.setDeviceMetricsOverride",
+                     {"width": 390, "height": 844, "deviceScaleFactor": 1, "mobile": True})
+            tab.send("Page.reload")
+            time.sleep(1.5)
+            tab.wait_ready()
+            data = tab.eval("""
+                (function () {
+                  var links = Array.prototype.map.call(document.querySelectorAll('.nav a'), function (a) {
+                    var r = a.getBoundingClientRect();
+                    return { t: (a.innerText || '').trim(), left: Math.round(r.left), right: Math.round(r.right) };
+                  });
+                  var cut = links.filter(function (l) {
+                    return l.right > window.innerWidth + 1 || l.left < -1;
+                  });
+                  var btn = document.querySelector('#add-drink');
+                  return {
+                    innerWidth: window.innerWidth,
+                    scrollWidth: document.documentElement.scrollWidth,
+                    navCut: cut.map(function (l) { return l.t; }).join(', '),
+                    navCount: links.length,
+                    btnWidth: btn ? Math.round(btn.getBoundingClientRect().width) : 0
+                  };
+                })()
+            """)
+            tab.send("Emulation.clearDeviceMetricsOverride")
+            ok("мобильная вёрстка: нет горизонтальной прокрутки",
+               data and data.get("scrollWidth") <= data.get("innerWidth") + 1,
+               "%s против %s px" % ((data or {}).get("scrollWidth"), (data or {}).get("innerWidth")))
+            ok("мобильная вёрстка: все пункты меню видны",
+               data and data.get("navCount", 0) >= 4 and not data.get("navCut"),
+               "обрезано: %s" % ((data or {}).get("navCut") or "нет"))
+            ok("мобильная вёрстка: «Рассчитать» во всю ширину карточки",
+               data and data.get("btnWidth", 0) >= (data.get("innerWidth") or 390) * 0.7,
+               "%s px" % ((data or {}).get("btnWidth")))
+
+        errors = open_page(BASE + "/index.html", mobile_js)
+        ok("мобильная вёрстка: нет ошибок JS", not errors, "; ".join(errors))
     finally:
         try:
             proc.terminate()

@@ -85,7 +85,7 @@
     lastSummary = sum;
 
     if (!state.entries.length) {
-      box.innerHTML = metric('Сейчас в крови', '—', 'Добавьте напиток слева') +
+      box.innerHTML = metric('Сейчас в крови', '—', 'Добавьте напиток и нажмите «Рассчитать»') +
                       metric('До 0,00 ‰', '—', 'Появится после расчёта');
       UI.qs('#chart').innerHTML = '';
       UI.qs('#breakdown').innerHTML = '';
