@@ -56,7 +56,10 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   outline: 2px solid rgba(52, 216, 179, .7); outline-offset: 2px; border-radius: 10px;
 }
 
-.wrap { width: 100%; max-width: 1120px; margin: 0 auto; padding: 0 clamp(16px, 2.5vw, 36px); }
+/* Отступы по бокам задаём только через padding-inline: .header-row, .section,
+   .hero и .site-footer ниже перебивают padding сбоку, если писать его shorthand
+   (padding: 8px 0). Из-за этого контент прижимался к краям экрана. */
+.wrap { width: 100%; max-width: 1120px; margin: 0 auto; padding-inline: clamp(16px, 2.5vw, 36px); }
 
 /* ---------- шапка ---------- */
 .site-header {
@@ -66,7 +69,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   backdrop-filter: blur(18px) saturate(150%);
   border-bottom: 1px solid rgba(255, 255, 255, .09);
 }
-.header-row { display: flex; align-items: center; gap: 14px; min-height: 62px; flex-wrap: wrap; padding: 8px 0; }
+.header-row { display: flex; align-items: center; gap: 14px; min-height: 62px; flex-wrap: wrap; padding-block: 8px; }
 .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; color: var(--text); }
 .logo:hover { text-decoration: none; }
 .logo-mark {
@@ -108,7 +111,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 #drink-hint { display: block; margin-top: 2px; }
 
 /* ---------- карточки / секции ---------- */
-.section { padding: clamp(24px, 4vw, 48px) 0; }
+.section { padding-block: clamp(24px, 4vw, 48px); }
 .card {
   background: var(--glass-panel);
   border: 1px solid var(--glass-border);
@@ -133,7 +136,7 @@ p { margin: 0 0 1em; }
 .nowrap { white-space: nowrap; }
 
 /* ---------- первый экран ---------- */
-.hero { padding: clamp(28px, 5vw, 56px) 0 8px; }
+.hero { padding-block: clamp(28px, 5vw, 56px) 8px; }
 .hero h1 { margin-bottom: 12px; }
 .hero p.lead { font-size: clamp(16px, 1.5vw, 18.5px); color: var(--muted); max-width: 62ch; }
 .hero-badges { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
@@ -295,7 +298,7 @@ details p:last-child { margin-bottom: 0; }
   margin-top: clamp(32px, 5vw, 64px);
   border-top: 1px solid var(--line);
   background: rgba(4, 9, 12, .6);
-  padding: 28px 0 36px; font-size: 14px; color: var(--muted);
+  padding-block: 28px 36px; font-size: 14px; color: var(--muted);
 }
 .footer-cols { display: grid; gap: 22px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
 .site-footer h3 { font-size: 14px; color: var(--text); margin-bottom: 8px; }

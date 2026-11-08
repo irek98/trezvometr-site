@@ -417,11 +417,13 @@ def main():
                     return l.right > window.innerWidth + 1 || l.left < -1;
                   });
                   var btn = document.querySelector('#add-drink');
+                  var navFirst = document.querySelector('.nav a');
                   return {
                     innerWidth: window.innerWidth,
                     scrollWidth: document.documentElement.scrollWidth,
                     navCut: cut.map(function (l) { return l.t; }).join(', '),
                     navCount: links.length,
+                    navLeft: navFirst ? Math.round(navFirst.getBoundingClientRect().left) : 0,
                     btnWidth: btn ? Math.round(btn.getBoundingClientRect().width) : 0
                   };
                 })()
@@ -436,6 +438,9 @@ def main():
             ok("мобильная вёрстка: «Рассчитать» во всю ширину карточки",
                data and data.get("btnWidth", 0) >= (data.get("innerWidth") or 390) * 0.7,
                "%s px" % ((data or {}).get("btnWidth")))
+            ok("мобильная вёрстка: контент не прижат к краю экрана",
+               data and data.get("navLeft", 0) >= 8,
+               "первый пункт меню на %s px от края" % ((data or {}).get("navLeft")))
 
         errors = open_page(BASE + "/index.html", mobile_js)
         ok("мобильная вёрстка: нет ошибок JS", not errors, "; ".join(errors))
