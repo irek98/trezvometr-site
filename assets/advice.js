@@ -37,7 +37,7 @@
     // часы выше порога прибора — по поминутной кривой, выборка каждые 15 минут
     var hoursAbove = 0;
     if (list.length) {
-      var legal = cfgVal('thresholds.legalBloodGL', 0.32);
+      var legal = cfgVal('thresholds.legalBloodGL', 0.30);
       var opts = global.AL.UI.opts();
       var pts = E.series(list, S.get().profile, opts, 15, n * 24 * 60);
       pts.forEach(function (p) {

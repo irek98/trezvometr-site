@@ -98,6 +98,15 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .btn-danger { background: linear-gradient(180deg, #ff8b8b, #e25555); color: #2a0707; }
 .btn-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 
+/* ---------- быстрый калькулятор ---------- */
+.btn-wide { flex: 1 1 100%; }
+.more-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 14px; }
+.more-row .btn { text-decoration: none; }
+#precise { border-top: 1px dashed rgba(255, 255, 255, .12); padding-top: 12px; }
+#precise > summary { cursor: pointer; color: var(--accent); font-size: 14px; }
+#precise > summary:hover { text-decoration: underline; }
+#drink-hint { display: block; margin-top: 2px; }
+
 /* ---------- карточки / секции ---------- */
 .section { padding: clamp(24px, 4vw, 48px) 0; }
 .card {

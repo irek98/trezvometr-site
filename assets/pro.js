@@ -96,7 +96,7 @@
                        : 'не хватает ' + E.duration(diffMin).text + ' — риск высок',
              okForWork ? '' : 'metric-stop') +
       metric('Сейчас в крови', E.format(base.sum.nowGL, 'promille'),
-             base.sum.nowGL > 0.32 ? 'выше порога прибора' : 'ниже порога прибора по модели');
+             base.sum.nowGL > base.sum.legalGL ? 'выше порога прибора' : 'ниже порога прибора по модели');
 
     global.AL.Charts.line(UI.qs('#chart'), base.sum.curve.points, {
       t0: base.sum.curve.t0,

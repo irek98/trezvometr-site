@@ -24,7 +24,7 @@
            (E.STANDARDS[std] || E.STANDARDS.ru).grams + ' г') +
       stat('Дней без алкоголя', ws.dryDays + ' из ' + ws.days) +
       stat('Часов выше порога', UI.num(ws.hoursAbove, 1),
-           'порог 0,16 мг/л ≈ 0,32 ‰') +
+           'порог прибора: 0,16 мг/л в выдохе = 0,30 ‰ в крови') +
       stat('Самый плотный день', ws.maxDay && ws.maxDay.grams > 0
            ? UI.num(ws.maxDay.drinks, 1) + ' дозы' : '—',
            ws.maxDay && ws.maxDay.grams > 0 ? ws.maxDay.label : '') +

@@ -16,7 +16,9 @@
   'use strict';
 
   var ETH_DENSITY = 0.789;   // г/мл
-  var BLOOD_BREATH = 2.0;    // г/л крови на 1 мг/л выдоха (приближение; закон: 0,16 мг/л ≈ 0,32 г/л)
+  var BLOOD_BREATH = 2.0;    // г/л крови на 1 мг/л выдоха — грубое приближение для пересчёта единиц.
+                             // В законе это ДВЕ отдельные нормы: 0,16 мг/л в выдохе и 0,30 г/л в крови,
+                             // поэтому порог считаем по крови (0,30), а мг/л показываем как справку.
 
   // Стандартная доза в разных странах — для дневника и статистики.
   var STANDARDS = {
@@ -237,7 +239,7 @@
   function summary(entries, profile, opts) {
     var cur = curve(entries, profile, opts);
     var o = cur.opts || resolveOpts(profile, opts);
-    var legal = 0.32;
+    var legal = 0.30;   // г/л крови — норма РФ (вторая норма в законе: 0,16 мг/л в выдохе)
     var cfg = global.AL_CONFIG || {};
     if (cfg.thresholds && cfg.thresholds.legalBloodGL) legal = cfg.thresholds.legalBloodGL;
     var atLegal = timeToThreshold(cur, legal);

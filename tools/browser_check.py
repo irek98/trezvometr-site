@@ -226,6 +226,42 @@ def main():
             rev = (data or {}).get("reverse") or ""
             ok("index: обратный расчёт посчитан",
                "Максимум" in rev or "нет запаса" in rev or "Время уже прошло" in rev, rev)
+            quick = tab.eval("""
+                (function () {
+                  var gate = document.querySelector('[data-gate="yes"]');
+                  if (gate) gate.click();
+                  var hint = (document.querySelector('#drink-hint').textContent || '').trim();
+                  // «Рассчитать» второй раз с теми же данными не должен удваивать выпитое
+                  document.querySelector('#add-drink').click();
+                  var sameTwice = document.querySelectorAll('#drink-list li').length;
+                  // смена количества порций пересчитывает сразу, без нажатий
+                  var count = document.querySelector('#count');
+                  count.value = '3';
+                  count.dispatchEvent(new Event('input', { bubbles: true }));
+                  var afterCount = document.querySelectorAll('#drink-list li').length;
+                  var zeroText = '';
+                  var metrics = document.querySelectorAll('#result-metrics .metric');
+                  if (metrics.length > 1) zeroText = metrics[1].innerText.replace(/\\s+/g, ' ').slice(0, 80);
+                  // «Рассчитать точнее» раскрывает блок с ростом/возрастом
+                  document.querySelector('#more-precise').click();
+                  var preciseOpen = document.querySelector('#precise').open;
+                  // возвращаем одну порцию: проверка «В дневник» ниже ждёт ровно одну запись
+                  count.value = '1';
+                  count.dispatchEvent(new Event('input', { bubbles: true }));
+                  return { hint: hint, sameTwice: sameTwice, afterCount: afterCount,
+                           zero: zeroText, preciseOpen: preciseOpen };
+                })()
+            """)
+            ok("index: подсказка под напитком заполнена",
+               "г чистого спирта" in ((quick or {}).get("hint") or ""), (quick or {}).get("hint"))
+            ok("index: повторный «Рассчитать» не удваивает дозировку",
+               quick and quick.get("sameTwice") == 1, str((quick or {}).get("sameTwice")))
+            ok("index: «Сколько порций» пересчитывает сразу, без нажатий",
+               quick and quick.get("afterCount") == 3, str((quick or {}).get("afterCount")))
+            ok("index: после смены порций «До 0,00» пересчитано",
+               "ч" in ((quick or {}).get("zero") or ""), (quick or {}).get("zero"))
+            ok("index: «Рассчитать точнее» раскрывает параметры",
+               (quick or {}).get("preciseOpen") is True)
             saved = tab.eval("""
                 (function () {
                   var gate = document.querySelector('[data-gate="yes"]');

@@ -15,7 +15,7 @@
     }
     var maxT = points[points.length - 1].tMin || 1;
     var maxG = Math.max.apply(null, points.map(function (p) { return p.gL; }));
-    var legal = o.legalGL === undefined ? 0.32 : o.legalGL;
+    var legal = o.legalGL === undefined ? 0.30 : o.legalGL;
     maxG = Math.max(maxG, legal * 1.25, 0.2);
     var x = function (t) { return padL + (t / maxT) * (W - padL - padR); };
     var y = function (g) { return H - padB - (g / maxG) * (H - padT - padB); };

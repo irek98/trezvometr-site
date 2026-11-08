@@ -6,6 +6,7 @@
   var S = global.AL.Store;
 
   var state = { entries: [] };
+  var formEntries = [];     // записи, созданные формой «напиток + сколько порций» — их заменяем при пересчёте
   var lastSummary = null;   // итог последнего расчёта — нужен обратному расчёту для времени нуля
 
   function profile() { return S.get().profile; }
@@ -38,6 +39,12 @@
     if (!d) return;
     UI.qs('#volume').value = d.ml;
     UI.qs('#abv').value = d.abv;
+    // Подсказка под селектом: «500 мл · 4,5 % · ≈17,8 г чистого спирта» — чтобы не гадать, что за порция.
+    var hint = UI.qs('#drink-hint');
+    if (hint) {
+      hint.textContent = d.ml + ' мл · ' + UI.num(d.abv, 1) + ' % · ≈' + UI.num(E.grams(d.ml, d.abv), 1) +
+                         ' г чистого спирта';
+    }
   }
 
   function entryLabel(e) {
@@ -45,9 +52,16 @@
     return d ? d.name : (e.name || 'Напиток');
   }
 
+  // Порог прибора по крови: в законе две нормы — 0,16 мг/л в выдохе и 0,30 г/л (‰) в крови.
+  // Считаем по крови: это то же число, что в config.js, поэтому подписи на странице не расходятся.
+  function legalGL() {
+    var cfg = global.AL_CONFIG || {};
+    return (cfg.thresholds && cfg.thresholds.legalBloodGL) || 0.30;
+  }
+
   function zoneText(gL) {
     if (gL <= 0.05) return 'По расчёту — практически ноль';
-    if (gL <= 0.32) return 'Ниже порога прибора — но это не гарантия';
+    if (gL <= legalGL()) return 'Ниже порога прибора — но это не гарантия';
     if (gL <= 0.8) return 'Лёгкое опьянение';
     if (gL <= 1.5) return 'Заметное опьянение';
     if (gL <= 2.5) return 'Сильное опьянение';
@@ -84,7 +98,7 @@
 
     box.innerHTML =
       metric('Сейчас в крови', E.format(sum.nowGL, units), zoneText(sum.nowGL),
-             sum.nowGL > 1.5 ? 'metric-stop' : (sum.nowGL > 0.32 ? 'metric-warn' : '')) +
+             sum.nowGL > 1.5 ? 'metric-stop' : (sum.nowGL > legalGL() ? 'metric-warn' : '')) +
       metric('До 0,00 ‰', E.duration(sum.zeroMin).text,
              'полное выведение, по расчёту в ' + zeroClock + (zeroMs > Date.now() ? ' · ' + UI.relative(zeroMs) : ''),
              'metric-accent') +
@@ -221,15 +235,23 @@
     if (state.entries.length && global.AL.Metrika) global.AL.Metrika.goalOnce('calc', 30000);
   }
 
-  function addDrinkFromForm() {
+  function applyForm(silent) {
     var d = UI.drinkById(UI.qs('#drink').value) || { id: 'custom', name: 'Напиток', abv: 40, ml: 50 };
     var count = Math.max(1, Number(UI.qs('#count').value) || 1);
     var volume = Number(UI.qs('#volume').value) || d.ml;
     var abv = Number(UI.qs('#abv').value) || d.abv;
     var dayOffset = Number(UI.qs('#day').value) || 0;
     var tMs = UI.timeToMs(UI.qs('#when').value || UI.msToTimeInput(Date.now()), dayOffset);
+    // Форма отвечает за «текущий напиток»: повторный расчёт заменяет прошлую дозировку,
+    // а не добавляет её ещё раз (иначе «Рассчитать» дважды удваивал бы выпитое).
+    var replaced = false;
+    if (formEntries.length && formEntries.every(function (e) { return state.entries.indexOf(e) !== -1; })) {
+      state.entries = state.entries.filter(function (e) { return formEntries.indexOf(e) === -1; });
+      replaced = true;
+    }
+    formEntries = [];
     for (var i = 0; i < count; i++) {
-      state.entries.push({
+      var entry = {
         id: S.uid(),
         tMs: tMs,
         volumeMl: volume,
@@ -237,24 +259,50 @@
         grams: E.grams(volume, abv),
         drinkId: d.id,
         name: d.name
-      });
+      };
+      formEntries.push(entry);
+      state.entries.push(entry);
     }
     state.entries.sort(function (a, b) { return a.tMs - b.tMs; });
     recalc();
-    UI.toast('Добавлено: ' + d.name + ' · ' + count + ' × ' + volume + ' мл');
+    if (!silent) UI.toast((replaced ? 'Пересчитано: ' : 'Добавлено: ') + d.name + ' · ' + count + ' × ' + volume + ' мл');
   }
 
   function bind() {
-    UI.on(UI.qs('#drink'), 'change', syncDrinkFields);
-    UI.on(UI.qs('#add-drink'), 'click', addDrinkFromForm);
+    UI.on(UI.qs('#drink'), 'change', function () {
+      syncDrinkFields();
+      if (formEntries.length) applyForm(true);
+    });
+    UI.on(UI.qs('#add-drink'), 'click', function () { applyForm(false); });
+    // Поменяли количество или время после расчёта — результат обновляется сам, без нажатий.
+    ['#count', '#when', '#volume', '#abv', '#day'].forEach(function (sel) {
+      var el = UI.qs(sel);
+      if (!el) return;
+      UI.on(el, 'input', function () { if (formEntries.length) applyForm(true); });
+      UI.on(el, 'change', function () { if (formEntries.length) applyForm(true); });
+    });
+    // «Рассчитать точнее» под результатом: раскрывает блок с ростом/возрастом/крепостью и ведёт к нему.
+    var moreBtn = UI.qs('#more-precise');
+    if (moreBtn) {
+      UI.on(moreBtn, 'click', function () {
+        var box = UI.qs('#precise');
+        if (!box) return;
+        box.open = true;
+        box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        var first = box.querySelector('input');
+        if (first) setTimeout(function () { try { first.focus({ preventScroll: true }); } catch (e) {} }, 400);
+      });
+    }
     UI.on(UI.qs('#reset-list'), 'click', function () {
       state.entries = [];
+      formEntries = [];
       recalc();
     });
     UI.on(UI.qs('#from-diary'), 'click', function () {
       var from = S.todayStart() - 86400000;
       var list = S.entriesBetween(from, Date.now() + 60000);
       if (!list.length) { UI.toast('В дневнике пока нет записей', 'warn'); return; }
+      formEntries = [];   // список из дневника форма не создавала — следующая форма добавится сверху
       state.entries = list.map(function (e) {
         var copy = Object.assign({}, e);
         copy.savedToDiary = true; // чтобы «В дневник» не создал дубли
