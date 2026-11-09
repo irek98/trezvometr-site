@@ -136,9 +136,15 @@ p { margin: 0 0 1em; }
 .nowrap { white-space: nowrap; }
 
 /* ---------- первый экран ---------- */
-.hero { padding-block: clamp(28px, 5vw, 56px) 8px; }
+/* Порядок блоков зависит от ширины: на телефоне калькулятор идёт сразу после
+   заголовка, а описание и бейджи — ниже (иначе до формы надо прокручивать). */
+.top-flow { display: flex; flex-direction: column; }
+.hero { order: 1; padding-block: clamp(28px, 5vw, 56px) 16px; }
 .hero h1 { margin-bottom: 12px; }
-.hero p.lead { font-size: clamp(16px, 1.5vw, 18.5px); color: var(--muted); max-width: 62ch; }
+.hero h1:last-child { margin-bottom: 0; }
+.hero-meta { order: 2; }
+.calc-top { order: 3; }
+.hero p.lead, .hero-meta .lead { font-size: clamp(16px, 1.5vw, 18.5px); color: var(--muted); max-width: 62ch; margin-bottom: 0; }
 .hero-badges { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
 .chip {
   display: inline-flex; align-items: center; gap: 6px;
@@ -318,6 +324,9 @@ details p:last-child { margin-bottom: 0; }
   .header-row { min-height: auto; }
   .metric .value { font-size: 24px; }
   .toast-box { left: 12px; right: 12px; max-width: none; }
+  /* На телефоне сначала калькулятор, потом описание и бейджи. */
+  .calc-top { order: 2; }
+  .hero-meta { order: 3; margin-top: 10px; }
 }
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; scroll-behavior: auto !important; }

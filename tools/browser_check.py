@@ -418,13 +418,17 @@ def main():
                   });
                   var btn = document.querySelector('#add-drink');
                   var navFirst = document.querySelector('.nav a');
+                  var calc = document.querySelector('.calc-top');
+                  var meta = document.querySelector('.hero-meta');
                   return {
                     innerWidth: window.innerWidth,
                     scrollWidth: document.documentElement.scrollWidth,
                     navCut: cut.map(function (l) { return l.t; }).join(', '),
                     navCount: links.length,
                     navLeft: navFirst ? Math.round(navFirst.getBoundingClientRect().left) : 0,
-                    btnWidth: btn ? Math.round(btn.getBoundingClientRect().width) : 0
+                    btnWidth: btn ? Math.round(btn.getBoundingClientRect().width) : 0,
+                    calcTop: calc ? Math.round(calc.getBoundingClientRect().top + window.scrollY) : -1,
+                    metaTop: meta ? Math.round(meta.getBoundingClientRect().top + window.scrollY) : -1
                   };
                 })()
             """)
@@ -441,9 +445,41 @@ def main():
             ok("мобильная вёрстка: контент не прижат к краю экрана",
                data and data.get("navLeft", 0) >= 8,
                "первый пункт меню на %s px от края" % ((data or {}).get("navLeft")))
+            ok("мобильная вёрстка: калькулятор выше описания и бейджей",
+               data and 0 <= data.get("calcTop", -1) < data.get("metaTop", -1),
+               "калькулятор %s px, описание %s px" % ((data or {}).get("calcTop"), (data or {}).get("metaTop")))
+            ok("мобильная вёрстка: форма видна на первом экране",
+               data and 0 <= data.get("calcTop", -1) <= 480,
+               "форма начинается на %s px от верха страницы" % ((data or {}).get("calcTop")))
 
         errors = open_page(BASE + "/index.html", mobile_js)
         ok("мобильная вёрстка: нет ошибок JS", not errors, "; ".join(errors))
+
+        # --- десктоп 1280 px: описание и бейджи остаются выше калькулятора ---
+        def desktop_js(tab):
+            tab.send("Emulation.setDeviceMetricsOverride",
+                     {"width": 1280, "height": 900, "deviceScaleFactor": 1, "mobile": False})
+            tab.send("Page.reload")
+            time.sleep(1.5)
+            tab.wait_ready()
+            data = tab.eval("""
+                (function () {
+                  var calc = document.querySelector('.calc-top');
+                  var meta = document.querySelector('.hero-meta');
+                  return {
+                    innerWidth: window.innerWidth,
+                    calcTop: calc ? Math.round(calc.getBoundingClientRect().top + window.scrollY) : -1,
+                    metaTop: meta ? Math.round(meta.getBoundingClientRect().top + window.scrollY) : -1
+                  };
+                })()
+            """)
+            tab.send("Emulation.clearDeviceMetricsOverride")
+            ok("десктоп: описание и бейджи выше калькулятора",
+               data and 0 <= data.get("metaTop", -1) < data.get("calcTop", -1),
+               "описание %s px, калькулятор %s px" % ((data or {}).get("metaTop"), (data or {}).get("calcTop")))
+
+        errors = open_page(BASE + "/index.html", desktop_js)
+        ok("десктоп 1280 px: нет ошибок JS", not errors, "; ".join(errors))
     finally:
         try:
             proc.terminate()
