@@ -284,7 +284,38 @@ def main():
                   // возвращаем одну позицию: проверка «В дневник» ниже ждёт ровно одну запись
                   document.querySelector('#reset-list').click();
                   btn.click();
-                  return { hint: hint, sameTwice: sameTwice, gramsOnce: gramsOnce,
+                  // подпись напитка — «Пиво светлое — 4,5 %»: без мл, объём вводится полем ниже
+                  var optText = sel.options[sel.selectedIndex].textContent;
+                  var vodkaCount = 0;
+                  for (var j = 0; j < sel.options.length; j++) {
+                    if ((sel.options[j].value || '').indexOf('vodka') === 0) vodkaCount++;
+                  }
+                  // подсказка считается по полям: меняем объём — меняются граммы
+                  var hintBefore = document.querySelector('#drink-hint').textContent;
+                  var vol2 = document.querySelector('#volume');
+                  vol2.value = '250';
+                  vol2.dispatchEvent(new Event('input', { bubbles: true }));
+                  var hintAfter = document.querySelector('#drink-hint').textContent;
+                  // «Желудок»: полный — всасывание 60 мин, пустой — 20, «не учитывать» — 40
+                  var stomach = document.querySelector('#stomach');
+                  var peak = document.querySelector('#peak');
+                  var setStomach = function (v) {
+                    stomach.value = v;
+                    stomach.dispatchEvent(new Event('change', { bubbles: true }));
+                  };
+                  setStomach('full');
+                  var peakFull = peak.value;
+                  var breakdownText = document.querySelector('#breakdown').innerText;
+                  setStomach('empty');
+                  var peakEmpty = peak.value;
+                  setStomach('any');
+                  var peakAny = peak.value;
+                  var stomachHint = document.querySelector('#stomach-hint').textContent;
+                  return { hint: hint, hintBefore: hintBefore, hintAfter: hintAfter,
+                           optText: optText, vodkaCount: vodkaCount,
+                           peakFull: peakFull, peakEmpty: peakEmpty, peakAny: peakAny,
+                           breakdownText: breakdownText, stomachHint: stomachHint,
+                           sameTwice: sameTwice, gramsOnce: gramsOnce,
                            afterVolume: afterVolume, gramsDoubled: gramsDoubled,
                            afterSecond: afterSecond, zero: zeroText,
                            whenHidden: whenHidden, whenShown: whenShown,
@@ -314,6 +345,26 @@ def main():
                quick and quick.get("volumeInDetails") is False, str((quick or {}).get("volumeInDetails")))
             ok("index: «Рассчитать точнее» раскрывает параметры",
                (quick or {}).get("preciseOpen") is True)
+            opt = (quick or {}).get("optText") or ""
+            ok("index: в подписи напитка нет объёма, только крепость",
+               "%" in opt and "мл" not in opt, opt)
+            ok("index: в базе один пункт «Водка»",
+               (quick or {}).get("vodkaCount") == 1, str((quick or {}).get("vodkaCount")))
+            ok("index: подсказка считается по введённому объёму",
+               (quick or {}).get("hintBefore") != (quick or {}).get("hintAfter") and
+               "г чистого спирта" in ((quick or {}).get("hintAfter") or ""),
+               "%s → %s" % ((quick or {}).get("hintBefore"), (quick or {}).get("hintAfter")))
+            ok("index: «Желудок»: полный — 60 мин, пустой — 20, не учитывать — 40",
+               (quick or {}).get("peakFull") == "60" and (quick or {}).get("peakEmpty") == "20" and
+               (quick or {}).get("peakAny") == "40",
+               "полный %s, пустой %s, любой %s" % ((quick or {}).get("peakFull"),
+                                                   (quick or {}).get("peakEmpty"),
+                                                   (quick or {}).get("peakAny")))
+            ok("index: всасывание 60 мин попало в расчёт",
+               "60 мин" in ((quick or {}).get("breakdownText") or ""),
+               str((quick or {}).get("breakdownText"))[:120])
+            ok("index: у «Желудка» есть пояснение",
+               bool((quick or {}).get("stomachHint")), str((quick or {}).get("stomachHint")))
             saved = tab.eval("""
                 (function () {
                   var gate = document.querySelector('[data-gate="yes"]');

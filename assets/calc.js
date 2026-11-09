@@ -32,6 +32,7 @@
     UI.qs('#p-height').value = p.heightCm || 175;
     UI.qs('#p-age').value = p.age || 35;
     UI.qs('#peak').value = String(Number(p.peakMinutes) || cfg.peakMinutes);
+    syncStomach(Number(p.peakMinutes) || cfg.peakMinutes);
     UI.qs('#rate').value = String(Number(p.eliminationRate) || cfg.eliminationRate);
     UI.qs('#model').value = p.model || cfg.model;
     UI.qs('#units').value = UI.units();
@@ -42,12 +43,49 @@
     if (!d) return;
     UI.qs('#volume').value = d.ml;
     UI.qs('#abv').value = d.abv;
-    // Подсказка под селектом: «500 мл · 4,5 % · ≈17,8 г чистого спирта» — чтобы не гадать, что за порция.
+    updateDrinkHint();
+  }
+
+  // Подсказка под названием напитка: считаем по введённым объёму и крепости, а не по «порции из базы».
+  // Объём и крепость в ней не повторяем — они видны в полях ниже, из-за этого и был дубль.
+  function updateDrinkHint() {
     var hint = UI.qs('#drink-hint');
-    if (hint) {
-      hint.textContent = d.ml + ' мл · ' + UI.num(d.abv, 1) + ' % · ≈' + UI.num(E.grams(d.ml, d.abv), 1) +
-                         ' г чистого спирта';
-    }
+    if (!hint) return;
+    var d = UI.drinkById(UI.qs('#drink').value) || { abv: 40, ml: 50 };
+    var volume = Number(UI.qs('#volume').value) || d.ml;
+    var abvRaw = UI.qs('#abv').value;
+    var abv = abvRaw === '' ? d.abv : Number(abvRaw);
+    if (!isFinite(abv)) abv = d.abv;
+    var g = E.grams(volume, abv);
+    hint.textContent = '≈' + UI.num(g, 1) + ' г чистого спирта · ' +
+                       UI.num(E.toStandardDrinks(g, UI.standard()), 1) + ' ст. д.';
+  }
+
+  // Желудок — это ярлык к времени всасывания («Всасывание» в блоке «Рассчитать точнее»):
+  // пустой — пик раньше, после еды — позже и выведение дольше. Высоту пика модель не меняет:
+  // она зависит от дозы и веса, а не от скорости всасывания.
+  var STOMACH_PEAK = { any: 40, empty: 20, full: 60 };
+  var STOMACH_TEXT = {
+    any: 'Время пика и выведения — как при обычном расчёте (40 мин). Высота пика зависит от дозы и веса.',
+    empty: 'Время пика и выведения — как натощак (20 мин). Высота пика зависит от дозы и веса.',
+    full: 'Время пика и выведения — как после еды (60 мин). Высота пика зависит от дозы и веса.'
+  };
+
+  function stomachFromPeak(peak) {
+    var p = Number(peak);
+    if (!isFinite(p)) return 'any';
+    if (p <= 25) return 'empty';
+    if (p >= 50) return 'full';
+    return 'any';
+  }
+
+  function syncStomach(peak) {
+    var sel = UI.qs('#stomach');
+    if (!sel) return;
+    var cur = stomachFromPeak(peak);
+    sel.value = cur;
+    var hint = UI.qs('#stomach-hint');
+    if (hint) hint.textContent = STOMACH_TEXT[cur];
   }
 
   function entryLabel(e) {
@@ -317,6 +355,21 @@
       UI.on(el, 'input', function () { if (formEntries.length) applyForm(true); });
       UI.on(el, 'change', function () { if (formEntries.length) applyForm(true); });
     });
+    // Подсказка «≈ г чистого спирта» считается по введённым объёму и крепости
+    ['#volume', '#abv'].forEach(function (sel) {
+      UI.on(UI.qs(sel), 'input', updateDrinkHint);
+    });
+    // «Желудок» — необязательный ярлык к времени всасывания: пишет тот же peakMinutes, что и «Всасывание»
+    var stomach = UI.qs('#stomach');
+    if (stomach) {
+      UI.on(stomach, 'change', function () {
+        var peak = STOMACH_PEAK[stomach.value] || STOMACH_PEAK.any;
+        S.patchProfile({ peakMinutes: peak });
+        UI.qs('#peak').value = String(peak);
+        syncStomach(peak);
+        recalc();
+      });
+    }
     // «Рассчитать точнее» под результатом: раскрывает блок с ростом/возрастом/крепостью и ведёт к нему.
     var moreBtn = UI.qs('#more-precise');
     if (moreBtn) {
@@ -378,6 +431,7 @@
     });
     UI.on(UI.qs('#peak'), 'change', function () {
       S.patchProfile({ peakMinutes: Number(UI.qs('#peak').value) });
+      syncStomach(UI.qs('#peak').value);
       recalc();
     });
     UI.on(UI.qs('#rate'), 'change', function () {

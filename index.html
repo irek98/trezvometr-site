@@ -79,6 +79,14 @@
                 <input id="when" type="time" hidden aria-label="Время, когда выпили">
               </div>
             </div>
+            <label class="field field-wide"><span>Желудок <span class="tiny muted">необязательно</span></span>
+              <select id="stomach">
+                <option value="any" selected>Не учитывать — обычный расчёт</option>
+                <option value="empty">Пустой — всасывание быстрее (20 мин)</option>
+                <option value="full">Полный, после еды — медленнее (60 мин)</option>
+              </select>
+              <small class="tiny muted" id="stomach-hint"></small>
+            </label>
           </div>
 
           <div class="btn-row" style="margin-top:14px">
@@ -98,7 +106,7 @@
               <label class="field"><span>День</span>
                 <select id="day"><option value="0">Сегодня</option><option value="-1">Вчера</option><option value="1">Завтра</option></select>
               </label>
-              <label class="field"><span>Всасывание</span>
+              <label class="field"><span>Всасывание <span class="tiny muted">то же, что «Желудок»</span></span>
                 <select id="peak">
                   <option value="20">Быстро (натощак) — 20 мин</option>
                   <option value="40" selected>Обычно — 40 мин</option>
@@ -257,13 +265,13 @@
 </footer>
 
 <script src="assets/config.js?v=1"></script>
-<script src="assets/engine.js?v=3"></script>
+<script src="assets/engine.js?v=4"></script>
 <script src="assets/store.js?v=1"></script>
-<script src="assets/ui.js?v=1"></script>
+<script src="assets/ui.js?v=2"></script>
 <script src="assets/advice.js?v=3"></script>
 <script src="assets/charts.js?v=3"></script>
 <script src="assets/reminders.js?v=1"></script>
-<script src="assets/calc.js?v=6"></script>
+<script src="assets/calc.js?v=8"></script>
 <script src="assets/metrika.js?v=1"></script>
 </body>
 </html>

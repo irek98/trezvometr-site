@@ -147,7 +147,16 @@
     });
   };
 
-  // Заполнить select напитками (optgroup по категориям)
+  // Крепость в подписи: 4,5 % (дробь через запятую), но 40 % без «,0»
+  UI.abvText = function (value) {
+    var v = Number(value);
+    if (!isFinite(v)) return '';
+    return (v % 1 === 0) ? String(v) : UI.num(v, 1);
+  };
+
+  // Заполнить select напитками (optgroup по категориям).
+  // В подписи — только название и крепость: объём пользователь вводит полем ниже,
+  // иначе «стопка 50 мл» и поле «Объём, мл» спорят друг с другом.
   UI.fillDrinks = function (select) {
     if (!select) return;
     var E = global.AL.Engine;
@@ -160,7 +169,7 @@
     order.forEach(function (cat) {
       html += '<optgroup label="' + cat + '">';
       groups[cat].forEach(function (d) {
-        html += '<option value="' + d.id + '">' + d.name + ' — ' + d.ml + ' мл, ' + d.abv + '%</option>';
+        html += '<option value="' + d.id + '">' + d.name + ' — ' + UI.abvText(d.abv) + ' %</option>';
       });
       html += '</optgroup>';
     });
