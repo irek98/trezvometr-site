@@ -239,35 +239,79 @@ def main():
                   var gate = document.querySelector('[data-gate="yes"]');
                   if (gate) gate.click();
                   var hint = (document.querySelector('#drink-hint').textContent || '').trim();
-                  // «Рассчитать» второй раз с теми же данными не должен удваивать выпитое
-                  document.querySelector('#add-drink').click();
-                  var sameTwice = document.querySelectorAll('#drink-list li').length;
-                  // смена количества порций пересчитывает сразу, без нажатий
-                  var count = document.querySelector('#count');
-                  count.value = '3';
-                  count.dispatchEvent(new Event('input', { bubbles: true }));
-                  var afterCount = document.querySelectorAll('#drink-list li').length;
+                  var rows = function () { return document.querySelectorAll('#drink-list li').length; };
+                  var gramsOf = function (i) {
+                    var li = document.querySelectorAll('#drink-list li')[i];
+                    var m = li ? li.textContent.match(/([\\d.,]+)\\s*г/) : null;
+                    return m ? parseFloat(m[1].replace(',', '.')) : 0;
+                  };
+                  var btn = document.querySelector('#add-drink');
+                  // двойной клик по «Рассчитать» не должен удваивать дозировку
+                  btn.click(); btn.click();
+                  var sameTwice = rows();
+                  var gramsOnce = gramsOf(0);
+                  // смена объёма пересчитывает последнюю позицию сразу, без нажатий
+                  var vol = document.querySelector('#volume');
+                  vol.value = String(Number(vol.value) * 2);
+                  vol.dispatchEvent(new Event('input', { bubbles: true }));
+                  var afterVolume = rows();
+                  var gramsDoubled = gramsOf(0);
                   var zeroText = '';
                   var metrics = document.querySelectorAll('#result-metrics .metric');
                   if (metrics.length > 1) zeroText = metrics[1].innerText.replace(/\\s+/g, ' ').slice(0, 80);
+                  // второй напиток добавляется к первому, а не заменяет его
+                  var sel = document.querySelector('#drink');
+                  var other = null;
+                  for (var i = 0; i < sel.options.length; i++) {
+                    if (sel.options[i].value && sel.options[i].value !== sel.value) { other = sel.options[i].value; break; }
+                  }
+                  sel.value = other;
+                  sel.dispatchEvent(new Event('change', { bubbles: true }));
+                  btn.click();
+                  var afterSecond = rows();
+                  // «Когда»: по умолчанию «сейчас», время открывается кнопкой «другое время»
+                  var whenInput = document.querySelector('#when');
+                  var whenHidden = whenInput.hidden;
+                  document.querySelector('#when-other').click();
+                  var whenShown = !whenInput.hidden;
+                  document.querySelector('#when-other').click();
+                  var whenHiddenAgain = whenInput.hidden;
+                  // объём и крепость должны быть на виду, а не спрятаны в «Рассчитать точнее»
+                  var volumeInDetails = !!document.querySelector('#volume').closest('details');
                   // «Рассчитать точнее» раскрывает блок с ростом/возрастом
                   document.querySelector('#more-precise').click();
                   var preciseOpen = document.querySelector('#precise').open;
-                  // возвращаем одну порцию: проверка «В дневник» ниже ждёт ровно одну запись
-                  count.value = '1';
-                  count.dispatchEvent(new Event('input', { bubbles: true }));
-                  return { hint: hint, sameTwice: sameTwice, afterCount: afterCount,
-                           zero: zeroText, preciseOpen: preciseOpen };
+                  // возвращаем одну позицию: проверка «В дневник» ниже ждёт ровно одну запись
+                  document.querySelector('#reset-list').click();
+                  btn.click();
+                  return { hint: hint, sameTwice: sameTwice, gramsOnce: gramsOnce,
+                           afterVolume: afterVolume, gramsDoubled: gramsDoubled,
+                           afterSecond: afterSecond, zero: zeroText,
+                           whenHidden: whenHidden, whenShown: whenShown,
+                           whenHiddenAgain: whenHiddenAgain, volumeInDetails: volumeInDetails,
+                           preciseOpen: preciseOpen };
                 })()
             """)
             ok("index: подсказка под напитком заполнена",
                "г чистого спирта" in ((quick or {}).get("hint") or ""), (quick or {}).get("hint"))
             ok("index: повторный «Рассчитать» не удваивает дозировку",
                quick and quick.get("sameTwice") == 1, str((quick or {}).get("sameTwice")))
-            ok("index: «Сколько порций» пересчитывает сразу, без нажатий",
-               quick and quick.get("afterCount") == 3, str((quick or {}).get("afterCount")))
-            ok("index: после смены порций «До 0,00» пересчитано",
+            ok("index: смена объёма пересчитывает последнюю позицию сразу",
+               quick and quick.get("afterVolume") == 1 and
+               (quick.get("gramsDoubled") or 0) > (quick.get("gramsOnce") or 0) * 1.8,
+               "позиций %s, г %s → %s" % ((quick or {}).get("afterVolume"),
+                                          (quick or {}).get("gramsOnce"), (quick or {}).get("gramsDoubled")))
+            ok("index: второй напиток суммируется с первым",
+               quick and quick.get("afterSecond") == 2, str((quick or {}).get("afterSecond")))
+            ok("index: после смены объёма «До 0,00» пересчитано",
                "ч" in ((quick or {}).get("zero") or ""), (quick or {}).get("zero"))
+            ok("index: «Когда» по умолчанию — «сейчас»",
+               quick and quick.get("whenHidden") is True, str((quick or {}).get("whenHidden")))
+            ok("index: «другое время» открывает и прячет поле времени",
+               quick and quick.get("whenShown") is True and quick.get("whenHiddenAgain") is True,
+               "открылось %s, спряталось %s" % ((quick or {}).get("whenShown"), (quick or {}).get("whenHiddenAgain")))
+            ok("index: объём и крепость в основной форме, не в «точнее»",
+               quick and quick.get("volumeInDetails") is False, str((quick or {}).get("volumeInDetails")))
             ok("index: «Рассчитать точнее» раскрывает параметры",
                (quick or {}).get("preciseOpen") is True)
             saved = tab.eval("""

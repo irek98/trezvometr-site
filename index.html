@@ -23,7 +23,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:image" content="https://trezvometr.ru/assets/og-image.png">
   <!-- /domain-block -->
-  <link rel="stylesheet" href="assets/style.css?v=5">
+  <link rel="stylesheet" href="assets/style.css?v=6">
 </head>
 <body>
 <header class="site-header">
@@ -55,7 +55,7 @@
       <div class="grid grid-2">
         <div class="card">
           <h2>Посчитайте за 10 секунд</h2>
-          <p class="small muted">Выберите напиток и количество — результат обновится сразу. Пол и вес берутся из профиля.</p>
+          <p class="small muted">Выберите напиток и объём — результат обновится сразу. Ещё один напиток добавляйте кнопкой ниже: дозы суммируются. Пол и вес берутся из профиля.</p>
 
           <div class="form-grid" id="profile-quick">
             <label class="field"><span>Пол</span>
@@ -69,12 +69,20 @@
           <div class="form-grid">
             <label class="field field-wide"><span>Напиток</span><select id="drink"></select>
               <small class="tiny muted" id="drink-hint"></small></label>
-            <label class="field"><span>Сколько порций</span><input id="count" type="number" min="1" max="20" step="1" value="1"></label>
-            <label class="field"><span>Когда</span><input id="when" type="time"></label>
+            <label class="field"><span>Объём, мл</span><input id="volume" type="number" min="10" max="2000" step="10" value="500"></label>
+            <label class="field"><span>Крепость, %</span><input id="abv" type="number" min="0.1" max="96" step="0.1" value="4.5"></label>
+            <div class="field field-wide when-field">
+              <span>Когда</span>
+              <div class="when-line">
+                <b id="when-now-label">Сейчас</b>
+                <button type="button" class="link-btn" id="when-other">другое время</button>
+                <input id="when" type="time" hidden aria-label="Время, когда выпили">
+              </div>
+            </div>
           </div>
 
           <div class="btn-row" style="margin-top:14px">
-            <button type="button" class="btn btn-wide" id="add-drink">Рассчитать</button>
+            <button type="button" class="btn btn-wide" id="add-drink">Добавить напиток</button>
             <button type="button" class="btn btn-ghost btn-sm" id="from-diary">Из дневника</button>
             <button type="button" class="btn btn-ghost btn-sm" id="reset-list">Очистить</button>
             <button type="button" class="btn btn-ghost btn-sm" id="save-diary">В дневник</button>
@@ -83,12 +91,10 @@
           <ul id="drink-list" class="breakdown" style="margin-top:16px"></ul>
 
           <details style="margin-top:16px" id="precise">
-            <summary>Рассчитать точнее: рост, возраст, крепость вручную, скорость выведения</summary>
+            <summary>Рассчитать точнее: рост, возраст, день, скорость выведения</summary>
             <div class="form-grid" style="margin-top:12px">
               <label class="field"><span>Рост, см</span><input id="p-height" type="number" min="130" max="220" step="1" value="175"></label>
               <label class="field"><span>Возраст</span><input id="p-age" type="number" min="18" max="99" step="1" value="35"></label>
-              <label class="field"><span>Объём порции, мл</span><input id="volume" type="number" min="10" max="2000" step="10" value="500"></label>
-              <label class="field"><span>Крепость, %</span><input id="abv" type="number" min="0.1" max="96" step="0.1" value="4.5"></label>
               <label class="field"><span>День</span>
                 <select id="day"><option value="0">Сегодня</option><option value="-1">Вчера</option><option value="1">Завтра</option></select>
               </label>
@@ -257,7 +263,7 @@
 <script src="assets/advice.js?v=3"></script>
 <script src="assets/charts.js?v=3"></script>
 <script src="assets/reminders.js?v=1"></script>
-<script src="assets/calc.js?v=5"></script>
+<script src="assets/calc.js?v=6"></script>
 <script src="assets/metrika.js?v=1"></script>
 </body>
 </html>

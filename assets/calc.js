@@ -6,7 +6,10 @@
   var S = global.AL.Store;
 
   var state = { entries: [] };
-  var formEntries = [];     // записи, созданные формой «напиток + сколько порций» — их заменяем при пересчёте
+  var formEntries = [];     // позиция, добавленная последним нажатием «Добавить напиток»: её правит смена мл/крепости/времени
+  var formDrinkId = null;   // напиток этой позиции: смена напитка в списке не переписывает уже добавленное
+  var lastAddSig = '';      // подпись последнего добавления — нужна, чтобы двойной клик не удваивал дозировку
+  var lastAddAt = 0;
   var lastSummary = null;   // итог последнего расчёта — нужен обратному расчёту для времени нуля
 
   function profile() { return S.get().profile; }
@@ -85,7 +88,7 @@
     lastSummary = sum;
 
     if (!state.entries.length) {
-      box.innerHTML = metric('Сейчас в крови', '—', 'Добавьте напиток и нажмите «Рассчитать»') +
+      box.innerHTML = metric('Сейчас в крови', '—', 'Добавьте напиток — расчёт появится сразу') +
                       metric('До 0,00 ‰', '—', 'Появится после расчёта');
       UI.qs('#chart').innerHTML = '';
       UI.qs('#breakdown').innerHTML = '';
@@ -235,47 +238,80 @@
     if (state.entries.length && global.AL.Metrika) global.AL.Metrika.goalOnce('calc', 30000);
   }
 
+  // «Когда» по умолчанию — «сейчас»: поле времени скрыто, пока не нажали «другое время».
+  function whenInputVisible() {
+    var el = UI.qs('#when');
+    return !!(el && !el.hidden);
+  }
+
+  function whenMs() {
+    if (!whenInputVisible()) return Date.now();
+    var dayOffset = Number(UI.qs('#day').value) || 0;
+    return UI.timeToMs(UI.qs('#when').value || UI.msToTimeInput(Date.now()), dayOffset);
+  }
+
   function applyForm(silent) {
     var d = UI.drinkById(UI.qs('#drink').value) || { id: 'custom', name: 'Напиток', abv: 40, ml: 50 };
-    var count = Math.max(1, Number(UI.qs('#count').value) || 1);
     var volume = Number(UI.qs('#volume').value) || d.ml;
     var abv = Number(UI.qs('#abv').value) || d.abv;
-    var dayOffset = Number(UI.qs('#day').value) || 0;
-    var tMs = UI.timeToMs(UI.qs('#when').value || UI.msToTimeInput(Date.now()), dayOffset);
-    // Форма отвечает за «текущий напиток»: повторный расчёт заменяет прошлую дозировку,
-    // а не добавляет её ещё раз (иначе «Рассчитать» дважды удваивал бы выпитое).
-    var replaced = false;
-    if (formEntries.length && formEntries.every(function (e) { return state.entries.indexOf(e) !== -1; })) {
+    var tMs = whenMs();
+    var sig = d.id + '|' + volume + '|' + abv + '|' + Math.round(tMs / 60000);
+    // Правка мл/крепости/времени после расчёта обновляет последнюю добавленную позицию — но только
+    // если напиток тот же. Сменили напиток в списке — это заготовка следующей порции, старая остаётся.
+    if (silent) {
+      if (!formEntries.length || d.id !== formDrinkId) return;
+      if (!formEntries.every(function (e) { return state.entries.indexOf(e) !== -1; })) return;
       state.entries = state.entries.filter(function (e) { return formEntries.indexOf(e) === -1; });
-      replaced = true;
+    } else if (sig === lastAddSig && Date.now() - lastAddAt < 700) {
+      return; // двойной клик по «Рассчитать»: та же порция в ту же минуту не добавляется второй раз
     }
-    formEntries = [];
-    for (var i = 0; i < count; i++) {
-      var entry = {
-        id: S.uid(),
-        tMs: tMs,
-        volumeMl: volume,
-        abv: abv,
-        grams: E.grams(volume, abv),
-        drinkId: d.id,
-        name: d.name
-      };
-      formEntries.push(entry);
-      state.entries.push(entry);
-    }
+    // Одна позиция = один объём и одна крепость: 2 стопки — это 100 мл, а не «2 порции по 50».
+    var entry = {
+      id: S.uid(),
+      tMs: tMs,
+      volumeMl: volume,
+      abv: abv,
+      grams: E.grams(volume, abv),
+      drinkId: d.id,
+      name: d.name
+    };
+    formEntries = [entry];
+    formDrinkId = d.id;
+    state.entries.push(entry);
     state.entries.sort(function (a, b) { return a.tMs - b.tMs; });
+    if (!silent) { lastAddSig = sig; lastAddAt = Date.now(); }
     recalc();
-    if (!silent) UI.toast((replaced ? 'Пересчитано: ' : 'Добавлено: ') + d.name + ' · ' + count + ' × ' + volume + ' мл');
+    if (!silent) UI.toast('Добавлено: ' + d.name + ' · ' + volume + ' мл ' + UI.num(abv, 1) + '%');
   }
 
   function bind() {
     UI.on(UI.qs('#drink'), 'change', function () {
+      // Выбрали другой напиток — это заготовка следующей порции, уже добавленное не трогаем.
       syncDrinkFields();
-      if (formEntries.length) applyForm(true);
     });
     UI.on(UI.qs('#add-drink'), 'click', function () { applyForm(false); });
-    // Поменяли количество или время после расчёта — результат обновляется сам, без нажатий.
-    ['#count', '#when', '#volume', '#abv', '#day'].forEach(function (sel) {
+    // «Когда»: по умолчанию «сейчас», время открывается по кнопке.
+    var whenBtn = UI.qs('#when-other');
+    if (whenBtn) {
+      UI.on(whenBtn, 'click', function () {
+        var inp = UI.qs('#when');
+        var label = UI.qs('#when-now-label');
+        if (inp.hidden) {
+          inp.hidden = false;
+          inp.value = UI.msToTimeInput(Date.now());
+          if (label) label.textContent = 'Время:';
+          whenBtn.textContent = 'сейчас';
+          try { inp.focus({ preventScroll: true }); } catch (e) {}
+        } else {
+          inp.hidden = true;
+          if (label) label.textContent = 'Сейчас';
+          whenBtn.textContent = 'другое время';
+        }
+        if (formEntries.length) applyForm(true);
+      });
+    }
+    // Поменяли объём, крепость или время после расчёта — последняя позиция обновляется сама, без нажатий.
+    ['#when', '#volume', '#abv', '#day'].forEach(function (sel) {
       var el = UI.qs(sel);
       if (!el) return;
       UI.on(el, 'input', function () { if (formEntries.length) applyForm(true); });
@@ -296,6 +332,8 @@
     UI.on(UI.qs('#reset-list'), 'click', function () {
       state.entries = [];
       formEntries = [];
+      formDrinkId = null;
+      lastAddSig = '';
       recalc();
     });
     UI.on(UI.qs('#from-diary'), 'click', function () {
@@ -303,6 +341,8 @@
       var list = S.entriesBetween(from, Date.now() + 60000);
       if (!list.length) { UI.toast('В дневнике пока нет записей', 'warn'); return; }
       formEntries = [];   // список из дневника форма не создавала — следующая форма добавится сверху
+      formDrinkId = null;
+      lastAddSig = '';
       state.entries = list.map(function (e) {
         var copy = Object.assign({}, e);
         copy.savedToDiary = true; // чтобы «В дневник» не создал дубли
