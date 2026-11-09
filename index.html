@@ -52,104 +52,104 @@
     </section>
 
     <section class="wrap section calc-top" style="padding-top:8px">
-    <div class="grid grid-2">
-      <div class="card">
-        <h2>Посчитайте за 10 секунд</h2>
-        <p class="small muted">Выберите напиток и количество — результат обновится сразу. Пол и вес берутся из профиля.</p>
+      <div class="grid grid-2">
+        <div class="card">
+          <h2>Посчитайте за 10 секунд</h2>
+          <p class="small muted">Выберите напиток и количество — результат обновится сразу. Пол и вес берутся из профиля.</p>
 
-        <div class="form-grid" id="profile-quick">
-          <label class="field"><span>Пол</span>
-            <select id="p-sex"><option value="male">Мужской</option><option value="female">Женский</option><option value="other">Не указывать</option></select>
-          </label>
-          <label class="field"><span>Вес, кг</span><input id="p-weight" type="number" min="35" max="220" step="1" value="75"></label>
-        </div>
-
-        <hr style="border:none;border-top:1px dashed rgba(255,255,255,.12);margin:18px 0">
-
-        <div class="form-grid">
-          <label class="field field-wide"><span>Напиток</span><select id="drink"></select>
-            <small class="tiny muted" id="drink-hint"></small></label>
-          <label class="field"><span>Сколько порций</span><input id="count" type="number" min="1" max="20" step="1" value="1"></label>
-          <label class="field"><span>Когда</span><input id="when" type="time"></label>
-        </div>
-
-        <div class="btn-row" style="margin-top:14px">
-          <button type="button" class="btn btn-wide" id="add-drink">Рассчитать</button>
-          <button type="button" class="btn btn-ghost btn-sm" id="from-diary">Из дневника</button>
-          <button type="button" class="btn btn-ghost btn-sm" id="reset-list">Очистить</button>
-          <button type="button" class="btn btn-ghost btn-sm" id="save-diary">В дневник</button>
-        </div>
-
-        <ul id="drink-list" class="breakdown" style="margin-top:16px"></ul>
-
-        <details style="margin-top:16px" id="precise">
-          <summary>Рассчитать точнее: рост, возраст, крепость вручную, скорость выведения</summary>
-          <div class="form-grid" style="margin-top:12px">
-            <label class="field"><span>Рост, см</span><input id="p-height" type="number" min="130" max="220" step="1" value="175"></label>
-            <label class="field"><span>Возраст</span><input id="p-age" type="number" min="18" max="99" step="1" value="35"></label>
-            <label class="field"><span>Объём порции, мл</span><input id="volume" type="number" min="10" max="2000" step="10" value="500"></label>
-            <label class="field"><span>Крепость, %</span><input id="abv" type="number" min="0.1" max="96" step="0.1" value="4.5"></label>
-            <label class="field"><span>День</span>
-              <select id="day"><option value="0">Сегодня</option><option value="-1">Вчера</option><option value="1">Завтра</option></select>
+          <div class="form-grid" id="profile-quick">
+            <label class="field"><span>Пол</span>
+              <select id="p-sex"><option value="male">Мужской</option><option value="female">Женский</option><option value="other">Не указывать</option></select>
             </label>
-            <label class="field"><span>Всасывание</span>
-              <select id="peak">
-                <option value="20">Быстро (натощак) — 20 мин</option>
-                <option value="40" selected>Обычно — 40 мин</option>
-                <option value="60">После плотной еды — 60 мин</option>
-                <option value="90">Очень медленно — 90 мин</option>
-              </select>
-            </label>
-            <label class="field"><span>Скорость выведения</span>
-              <select id="rate">
-                <option value="0.10">Медленная — 0,10 ‰/ч</option>
-                <option value="0.15" selected>Средняя — 0,15 ‰/ч</option>
-                <option value="0.20">Быстрая — 0,20 ‰/ч</option>
-              </select>
-            </label>
-            <label class="field"><span>Модель объёма</span>
-              <select id="model">
-                <option value="widmark" selected>Видмарка (вес, пол)</option>
-                <option value="watson">Watson (плюс рост и возраст)</option>
-              </select>
-            </label>
-            <label class="field"><span>Единицы</span>
-              <select id="units">
-                <option value="promille" selected>‰ (промилле)</option>
-                <option value="percent">% BAC</option>
-                <option value="breath">мг/л выдоха</option>
-              </select>
-            </label>
+            <label class="field"><span>Вес, кг</span><input id="p-weight" type="number" min="35" max="220" step="1" value="75"></label>
           </div>
-          <p class="small muted" style="margin:10px 0 0">Значения сохраняются в профиле и используются на всех страницах.</p>
-        </details>
-      </div>
 
-      <div class="card">
-        <h2>Результат</h2>
-        <div id="result-metrics" class="result-hero"></div>
-        <div class="more-row">
-          <button type="button" class="btn btn-ghost btn-sm" id="more-precise">Рассчитать точнее</button>
-          <a class="btn btn-ghost btn-sm" href="pro.html">Режим 0,00 для профи</a>
+          <hr style="border:none;border-top:1px dashed rgba(255,255,255,.12);margin:18px 0">
+
+          <div class="form-grid">
+            <label class="field field-wide"><span>Напиток</span><select id="drink"></select>
+              <small class="tiny muted" id="drink-hint"></small></label>
+            <label class="field"><span>Сколько порций</span><input id="count" type="number" min="1" max="20" step="1" value="1"></label>
+            <label class="field"><span>Когда</span><input id="when" type="time"></label>
+          </div>
+
+          <div class="btn-row" style="margin-top:14px">
+            <button type="button" class="btn btn-wide" id="add-drink">Рассчитать</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="from-diary">Из дневника</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="reset-list">Очистить</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="save-diary">В дневник</button>
+          </div>
+
+          <ul id="drink-list" class="breakdown" style="margin-top:16px"></ul>
+
+          <details style="margin-top:16px" id="precise">
+            <summary>Рассчитать точнее: рост, возраст, крепость вручную, скорость выведения</summary>
+            <div class="form-grid" style="margin-top:12px">
+              <label class="field"><span>Рост, см</span><input id="p-height" type="number" min="130" max="220" step="1" value="175"></label>
+              <label class="field"><span>Возраст</span><input id="p-age" type="number" min="18" max="99" step="1" value="35"></label>
+              <label class="field"><span>Объём порции, мл</span><input id="volume" type="number" min="10" max="2000" step="10" value="500"></label>
+              <label class="field"><span>Крепость, %</span><input id="abv" type="number" min="0.1" max="96" step="0.1" value="4.5"></label>
+              <label class="field"><span>День</span>
+                <select id="day"><option value="0">Сегодня</option><option value="-1">Вчера</option><option value="1">Завтра</option></select>
+              </label>
+              <label class="field"><span>Всасывание</span>
+                <select id="peak">
+                  <option value="20">Быстро (натощак) — 20 мин</option>
+                  <option value="40" selected>Обычно — 40 мин</option>
+                  <option value="60">После плотной еды — 60 мин</option>
+                  <option value="90">Очень медленно — 90 мин</option>
+                </select>
+              </label>
+              <label class="field"><span>Скорость выведения</span>
+                <select id="rate">
+                  <option value="0.10">Медленная — 0,10 ‰/ч</option>
+                  <option value="0.15" selected>Средняя — 0,15 ‰/ч</option>
+                  <option value="0.20">Быстрая — 0,20 ‰/ч</option>
+                </select>
+              </label>
+              <label class="field"><span>Модель объёма</span>
+                <select id="model">
+                  <option value="widmark" selected>Видмарка (вес, пол)</option>
+                  <option value="watson">Watson (плюс рост и возраст)</option>
+                </select>
+              </label>
+              <label class="field"><span>Единицы</span>
+                <select id="units">
+                  <option value="promille" selected>‰ (промилле)</option>
+                  <option value="percent">% BAC</option>
+                  <option value="breath">мг/л выдоха</option>
+                </select>
+              </label>
+            </div>
+            <p class="small muted" style="margin:10px 0 0">Значения сохраняются в профиле и используются на всех страницах.</p>
+          </details>
         </div>
-        <div id="chart" class="chart-box"></div>
-        <ul id="breakdown" class="breakdown"></ul>
-        <details style="margin-top:14px">
-          <summary>Что означают ‰, мг/л, «г» и «ст. д.»</summary>
-          <ul class="breakdown" style="margin-top:10px">
-            <li><span>‰ (промилле)</span><b>грамм чистого спирта на литр крови: 1 ‰ = 1 г/л</b></li>
-            <li><span>% BAC</span><b>то же в процентах: 1 ‰ = 0,1 %</b></li>
-            <li><span>мг/л</span><b>миллиграммы спирта на литр выдоха — так измеряет алкотестер: 0,16 мг/л ≈ 0,30 ‰ крови</b></li>
-            <li><span>г</span><b>граммы чистого спирта, а не объём напитка: 50 мл водки 40% = 15,8 г</b></li>
-            <li><span>ст. д.</span><b>стандартная доза — 10 г спирта: 30 мл водки или 250 мл пива 4,5%</b></li>
-            <li><span>Объём распределения</span><b>условный объём тела, по которому распределяется спирт (вес × коэффициент)</b></li>
-          </ul>
-          <p class="tiny muted" style="margin-top:8px">Подробнее — в <a href="baza-znaniy.html">базе знаний</a>.</p>
-        </details>
-        <p class="tiny muted" style="margin-top:14px">Оценка по формулам Видмарка/Watson и средней скорости выведения.
-          Индивидуальные значения могут отличаться в 1,5–2 раза: влияют печень, лекарства, усталость, еда и генетика.</p>
+
+        <div class="card">
+          <h2>Результат</h2>
+          <div id="result-metrics" class="result-hero"></div>
+          <div class="more-row">
+            <button type="button" class="btn btn-ghost btn-sm" id="more-precise">Рассчитать точнее</button>
+            <a class="btn btn-ghost btn-sm" href="pro.html">Режим 0,00 для профи</a>
+          </div>
+          <div id="chart" class="chart-box"></div>
+          <ul id="breakdown" class="breakdown"></ul>
+          <details style="margin-top:14px">
+            <summary>Что означают ‰, мг/л, «г» и «ст. д.»</summary>
+            <ul class="breakdown" style="margin-top:10px">
+              <li><span>‰ (промилле)</span><b>грамм чистого спирта на литр крови: 1 ‰ = 1 г/л</b></li>
+              <li><span>% BAC</span><b>то же в процентах: 1 ‰ = 0,1 %</b></li>
+              <li><span>мг/л</span><b>миллиграммы спирта на литр выдоха — так измеряет алкотестер: 0,16 мг/л ≈ 0,30 ‰ крови</b></li>
+              <li><span>г</span><b>граммы чистого спирта, а не объём напитка: 50 мл водки 40% = 15,8 г</b></li>
+              <li><span>ст. д.</span><b>стандартная доза — 10 г спирта: 30 мл водки или 250 мл пива 4,5%</b></li>
+              <li><span>Объём распределения</span><b>условный объём тела, по которому распределяется спирт (вес × коэффициент)</b></li>
+            </ul>
+            <p class="tiny muted" style="margin-top:8px">Подробнее — в <a href="baza-znaniy.html">базе знаний</a>.</p>
+          </details>
+          <p class="tiny muted" style="margin-top:14px">Оценка по формулам Видмарка/Watson и средней скорости выведения.
+            Индивидуальные значения могут отличаться в 1,5–2 раза: влияют печень, лекарства, усталость, еда и генетика.</p>
+        </div>
       </div>
-    </div>
     </section>
 
     <section class="wrap hero-meta">
