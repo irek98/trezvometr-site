@@ -107,6 +107,11 @@ def check_html():
            ('rel="canonical" href="%s' % DOMAIN) in text)
         ok("HTML %s: подключён favicon" % name,
            '<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">' in text)
+        ok("HTML %s: иконка для iOS" % name,
+           '<link rel="apple-touch-icon" href="assets/icon-180.png">' in text)
+        ok("HTML %s: манифест и favicon.ico" % name,
+           '<link rel="manifest" href="site.webmanifest">' in text
+           and '<link rel="icon" href="favicon.ico"' in text)
         ok("HTML %s: og:url на домен" % name,
            ('property="og:url" content="%s' % DOMAIN) in text)
         ok("HTML %s: og:image" % name,
@@ -139,6 +144,20 @@ def check_seo_files():
 
     fav = os.path.join(SITE, "assets", "favicon.svg")
     ok("assets/favicon.svg: файл есть", os.path.exists(fav), "нет файла" if not os.path.exists(fav) else "")
+
+    # Иконки: iOS, PWA (обычная + maskable), favicon.ico для поисковиков и старых браузеров.
+    man_path = os.path.join(SITE, "site.webmanifest")
+    man = read_text(man_path) if os.path.exists(man_path) else ""
+    ok("site.webmanifest: три иконки", man.count('"src"') == 3, str(man.count('"src"')))
+    ok("site.webmanifest: maskable-иконка", "icon-512-maskable.png" in man)
+    for fname, want in (("icon-180.png", (180, 180)), ("icon-192.png", (192, 192)),
+                        ("icon-512.png", (512, 512)), ("icon-512-maskable.png", (512, 512))):
+        p = os.path.join(SITE, "assets", fname)
+        got = png_size(p) if os.path.exists(p) else None
+        ok("assets/%s: %d×%d" % (fname, want[0], want[1]), got == want, str(got))
+    ico = os.path.join(SITE, "favicon.ico")
+    ico_size = os.path.getsize(ico) if os.path.exists(ico) else 0
+    ok("favicon.ico: файл есть", ico_size > 600, "%d байт" % ico_size)
 
     mjs = read_text(os.path.join(SITE, "assets", "metrika.js"))
     ok("metrika.js: Вебвизор выключен", "webvisor: false" in mjs)
