@@ -117,6 +117,41 @@
            (hint ? '<div class="hint">' + hint + '</div>' : '') + '</div>';
   }
 
+  // Пояснение под «Сейчас в крови»: цифра зависит от времени, а не только от дозы.
+  // Спирт всасывается 20–60 мин («Желудок»/«Всасывание»), поэтому сразу после порции показатель
+  // маленький, до пика растёт, а после пика падает со скоростью выведения.
+  function renderNowNote(sum, units) {
+    var note = UI.qs('#now-note');
+    if (!note) return;
+    var hint = '«Сейчас в крови» — концентрация в текущую минуту, а не «сколько выпито»: спирт ' +
+               'всасывается 20–60 мин, поэтому сразу после порции цифра маленькая и растёт до пика.';
+    if (!sum || !sum.curve || !sum.curve.points.length) {
+      note.textContent = hint;
+      return;
+    }
+    var peakClock = UI.fmtTime(sum.curve.t0 + sum.peakMin * 60000);
+    var peakText = E.format(sum.peakGL, units);
+    if (sum.nowMin < 0) {
+      note.textContent = 'Порция ещё впереди (в ' + UI.fmtTime(sum.curve.t0) + '): «сейчас» станет ' +
+                         'расти после неё, пик ' + peakText + ' около ' + peakClock + '.';
+      return;
+    }
+    // Порядок важен: сразу после порции концентрация ещё ноль, но спирт уже всасывается —
+    // это не «вышел», поэтому сначала проверяем время, а не значение.
+    if (sum.nowMin < sum.peakMin) {
+      note.textContent = 'Спирт ещё всасывается: до пика ' + peakText + ' осталось ' +
+                         E.duration(sum.peakMin - sum.nowMin).text + ' (около ' + peakClock +
+                         ') — поэтому «сейчас» пока растёт.';
+      return;
+    }
+    if (sum.nowGL <= 0.001) {
+      note.textContent = 'Спирт уже вышел: пик ' + peakText + ' был в ' + peakClock + ' — сейчас в крови ноль.';
+      return;
+    }
+    note.textContent = 'Пик ' + peakText + ' был в ' + peakClock + '. Дальше только выведение: ' +
+                       '«сейчас» уменьшается примерно на ' + UI.num(sum.opts.rate, 2) + ' ‰/ч.';
+  }
+
   function renderResult() {
     var p = profile();
     var opts = UI.opts();
@@ -130,6 +165,7 @@
                       metric('До 0,00 ‰', '—', 'Появится после расчёта');
       UI.qs('#chart').innerHTML = '';
       UI.qs('#breakdown').innerHTML = '';
+      renderNowNote(null, units);
       return;
     }
 
@@ -163,6 +199,8 @@
       '<li><span>Объём распределения</span><b>' + UI.num(sum.vd, 1) + ' л · ' +
         (sum.opts.model === 'watson' ? 'Watson' : 'Видмарк') + '</b></li>' +
       '<li><span>Всасывание до пика</span><b>' + sum.opts.peakMinutes + ' мин</b></li>';
+
+    renderNowNote(sum, units);
   }
 
   function renderReverse() {

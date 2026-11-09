@@ -238,7 +238,11 @@ def main():
                 (function () {
                   var gate = document.querySelector('[data-gate="yes"]');
                   if (gate) gate.click();
+                  // начинаем с пустого списка: от него зависят и счётчики позиций, и текст-подсказка
+                  var resetFirst = document.querySelector('#reset-list');
+                  if (resetFirst) resetFirst.click();
                   var hint = (document.querySelector('#drink-hint').textContent || '').trim();
+                  var noteEmpty = (document.querySelector('#now-note').textContent || '').trim();
                   var rows = function () { return document.querySelectorAll('#drink-list li').length; };
                   var gramsOf = function (i) {
                     var li = document.querySelectorAll('#drink-list li')[i];
@@ -250,6 +254,7 @@ def main():
                   btn.click(); btn.click();
                   var sameTwice = rows();
                   var gramsOnce = gramsOf(0);
+                  var noteFresh = (document.querySelector('#now-note').textContent || '').trim();
                   // смена объёма пересчитывает последнюю позицию сразу, без нажатий
                   var vol = document.querySelector('#volume');
                   vol.value = String(Number(vol.value) * 2);
@@ -311,8 +316,23 @@ def main():
                   setStomach('any');
                   var peakAny = peak.value;
                   var stomachHint = document.querySelector('#stomach-hint').textContent;
+                  // «Сейчас в крови»: пояснение должно объяснять, почему цифра меняется —
+                  // свежая порция ещё всасывается, а порция 3 часа назад уже прошла пик.
+                  var when2 = document.querySelector('#when');
+                  document.querySelector('#when-other').click();
+                  var back = new Date(Date.now() - 3 * 3600 * 1000);
+                  var daySel = document.querySelector('#day');
+                  daySel.value = (back.getDate() === new Date().getDate()) ? '0' : '-1';
+                  daySel.dispatchEvent(new Event('change', { bubbles: true }));
+                  when2.value = ('0' + back.getHours()).slice(-2) + ':' + ('0' + back.getMinutes()).slice(-2);
+                  when2.dispatchEvent(new Event('input', { bubbles: true }));
+                  var noteAfterPeak = (document.querySelector('#now-note').textContent || '').trim();
+                  daySel.value = '0';
+                  daySel.dispatchEvent(new Event('change', { bubbles: true }));
+                  document.querySelector('#when-other').click();
                   return { hint: hint, hintBefore: hintBefore, hintAfter: hintAfter,
                            optText: optText, vodkaCount: vodkaCount,
+                           noteEmpty: noteEmpty, noteFresh: noteFresh, noteAfterPeak: noteAfterPeak,
                            peakFull: peakFull, peakEmpty: peakEmpty, peakAny: peakAny,
                            breakdownText: breakdownText, stomachHint: stomachHint,
                            sameTwice: sameTwice, gramsOnce: gramsOnce,
@@ -365,6 +385,16 @@ def main():
                str((quick or {}).get("breakdownText"))[:120])
             ok("index: у «Желудка» есть пояснение",
                bool((quick or {}).get("stomachHint")), str((quick or {}).get("stomachHint")))
+            ok("index: под «Сейчас в крови» есть пояснение",
+               "всасыва" in ((quick or {}).get("noteEmpty") or "").lower(),
+               (quick or {}).get("noteEmpty"))
+            ok("index: пояснение объясняет рост показателя (порция ещё всасывается)",
+               "всасыва" in ((quick or {}).get("noteFresh") or "").lower(),
+               (quick or {}).get("noteFresh"))
+            note_after = (quick or {}).get("noteAfterPeak") or ""
+            ok("index: пояснение после пика — про выведение, а не про всасывание",
+               ("выведен" in note_after.lower() or "вышел" in note_after.lower()) and
+               note_after != (quick or {}).get("noteFresh"), note_after)
             saved = tab.eval("""
                 (function () {
                   var gate = document.querySelector('[data-gate="yes"]');
