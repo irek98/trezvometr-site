@@ -112,6 +112,7 @@ def check_html():
         ok("HTML %s: манифест и favicon.ico" % name,
            '<link rel="manifest" href="site.webmanifest">' in text
            and '<link rel="icon" href="favicon.ico"' in text)
+        ok("HTML %s: style.css v7" % name, "assets/style.css?v=7" in text)
         ok("HTML %s: og:url на домен" % name,
            ('property="og:url" content="%s' % DOMAIN) in text)
         m = re.search(r'property="og:image" content="%s/assets/(og-[a-z0-9-]+\.png)"' % re.escape(DOMAIN), text)
@@ -192,6 +193,10 @@ def check_articles():
     ok("статья: ссылка на калькулятор", 'href="index.html"' in text)
     ok("статья: ссылка на режим 0,00", 'href="pro.html"' in text)
     ok("статья: ссылка на базу знаний", 'href="baza-znaniy.html"' in text)
+    ok("статья: подсказка о прокрутке таблицы", text.count('class="tiny muted scroll-hint"') == 2,
+       str(text.count("scroll-hint")))
+    css = read_text(os.path.join(SITE, "assets", "style.css"))
+    ok("style.css: подсказка скрыта на десктопе", ".scroll-hint { display: none; }" in css)
 
     blocks = re.findall(r'<script type="application/ld\+json">(.*?)</script>', text, re.S)
     ok("статья: JSON-LD найден", len(blocks) == 1, str(len(blocks)))
