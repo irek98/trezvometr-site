@@ -114,9 +114,11 @@ def check_html():
            and '<link rel="icon" href="favicon.ico"' in text)
         ok("HTML %s: og:url на домен" % name,
            ('property="og:url" content="%s' % DOMAIN) in text)
-        ok("HTML %s: og:image" % name,
-           ('property="og:image" content="%s/assets/og-image.png"' % DOMAIN) in text,
-           "")
+        m = re.search(r'property="og:image" content="%s/assets/(og-[a-z0-9-]+\.png)"' % re.escape(DOMAIN), text)
+        ok("HTML %s: og:image на домене" % name, bool(m), m.group(1) if m else "нет")
+        if m:
+            ok("HTML %s: og:image шириной 1200" % name,
+               'property="og:image:width" content="1200"' in text)
         ok("HTML %s: подключён счётчик Метрики" % name,
            '<script src="assets/metrika.js?v=1"></script>' in text)
         ok("HTML %s: метатег подтверждения Яндекса" % name,
@@ -131,7 +133,8 @@ def check_seo_files():
     ok("sitemap.xml: домен в адресах", DOMAIN + "/" in sm and "example.ru" not in sm)
     ok("sitemap.xml: схема sitemaps.org",
        'xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"' in sm)
-    ok("sitemap.xml: восемь адресов", sm.count("<loc>") == 8, str(sm.count("<loc>")))
+    ok("sitemap.xml: девять адресов", sm.count("<loc>") == 9, str(sm.count("<loc>")))
+    ok("sitemap.xml: статья про пиво включена", "/vytrezvlenie-piva.html" in sm)
     ok("sitemap.xml: без служебных страниц", "tests.html" not in sm and "og-image" not in sm)
 
     rb = read_text(os.path.join(SITE, "robots.txt"))
@@ -174,6 +177,44 @@ def check_seo_files():
         ok("деплой: есть %s" % name, os.path.exists(os.path.join(SITE, name)))
     if os.path.exists(os.path.join(SITE, "CNAME")):
         ok("CNAME: домен без схемы", read_text(os.path.join(SITE, "CNAME")).strip() == "trezvometr.ru")
+
+
+def check_articles():
+    """Статья про пиво: страница, разметка Article, обложка, перелинковка."""
+    path = os.path.join(SITE, "vytrezvlenie-piva.html")
+    if not os.path.exists(path):
+        ok("статья: страница есть", False, "нет файла")
+        return
+    text = read_text(path)
+    ok("статья: H1 про выветривание пива", "Сколько выветривается пиво" in text)
+    ok("статья: таблица 4,5% есть", "пиво 4,5%" in text)
+    ok("статья: таблица 6% есть", "пиво 6%" in text)
+    ok("статья: ссылка на калькулятор", 'href="index.html"' in text)
+    ok("статья: ссылка на режим 0,00", 'href="pro.html"' in text)
+    ok("статья: ссылка на базу знаний", 'href="baza-znaniy.html"' in text)
+
+    blocks = re.findall(r'<script type="application/ld\+json">(.*?)</script>', text, re.S)
+    ok("статья: JSON-LD найден", len(blocks) == 1, str(len(blocks)))
+    parsed = None
+    if blocks:
+        try:
+            parsed = json.loads(blocks[0])
+            ok("статья: JSON-LD валиден", True)
+        except Exception as e:
+            ok("статья: JSON-LD валиден", False, str(e)[:80])
+    if isinstance(parsed, dict) and "@graph" in parsed:
+        types = [n.get("@type") for n in parsed["@graph"] if isinstance(n, dict)]
+        ok("статья: Article в разметке", "Article" in types, str(types))
+        ok("статья: хлебные крошки в разметке", "BreadcrumbList" in types, str(types))
+
+    for fname, want in (("og-vytrezvlenie-piva.png", (1200, 630)),
+                        ("og-image.png", (1200, 630))):
+        p = os.path.join(SITE, "assets", fname)
+        got = png_size(p) if os.path.exists(p) else None
+        ok("assets/%s: %d×%d" % (fname, want[0], want[1]), got == want, str(got))
+
+    bz = read_text(os.path.join(SITE, "baza-znaniy.html"))
+    ok("baza-znaniy → статья: перелинковка", 'href="vytrezvlenie-piva.html"' in bz)
 
 
 def start_edge():
@@ -222,6 +263,7 @@ def open_page(url, console_js=None):
 def main():
     check_html()
     check_seo_files()
+    check_articles()
     proc = start_edge()
     try:
         # --- главная: калькулятор + обратный расчёт + сохранение в дневник ---
@@ -538,6 +580,57 @@ def main():
 
         errors = open_page(BASE + "/tests.html", tests_js)
         ok("tests.html: нет ошибок JS", not errors, "; ".join(errors))
+
+        # --- статья про пиво: таблицы, ссылки, разметка ---
+        def article_js(tab):
+            data = tab.eval("""
+                (function () {
+                  return {
+                    tables: document.querySelectorAll('.prose table').length,
+                    rows: document.querySelectorAll('.prose table tbody tr').length,
+                    calc: document.querySelectorAll('a[href="index.html"]').length,
+                    ld: (function () { try { return !!JSON.parse(document.querySelector('script[type="application/ld+json"]').textContent)['@graph']; } catch (e) { return false; } })(),
+                    h1: (document.querySelector('h1') || {}).innerText || ''
+                  };
+                })()
+            """)
+            ok("статья: две таблицы", data and data.get("tables") == 2, str(data and data.get("tables")))
+            ok("статья: шесть строк в таблицах", data and data.get("rows") == 6, str(data and data.get("rows")))
+            ok("статья: ссылки на калькулятор", data and (data.get("calc") or 0) >= 2, str(data and data.get("calc")))
+            ok("статья: JSON-LD разбирается в браузере", data and data.get("ld") is True)
+            ok("статья: H1 на месте", bool(data and "выветривается пиво" in (data.get("h1") or "").lower()))
+
+        errors = open_page(BASE + "/vytrezvlenie-piva.html", article_js)
+        ok("статья: нет ошибок JS", not errors, "; ".join(errors))
+
+        # --- статья на 390 px: страница не «разъезжается», таблица прокручивается внутри блока ---
+        def article_mobile_js(tab):
+            tab.send("Emulation.setDeviceMetricsOverride",
+                     {"width": 390, "height": 844, "deviceScaleFactor": 1, "mobile": True})
+            tab.send("Page.reload")
+            time.sleep(1.6)
+            tab.wait_ready()
+            tab.eval("(function(){var g=document.querySelector('[data-gate=\"yes\"]');if(g)g.click();})()")
+            time.sleep(0.4)
+            data = tab.eval("""
+                (function () {
+                  var w = document.querySelector('.table-wrap');
+                  return {
+                    doc: document.documentElement.scrollWidth,
+                    vw: window.innerWidth,
+                    tw: w ? w.scrollWidth : 0,
+                    cw: w ? w.clientWidth : 0
+                  };
+                })()
+            """)
+            ok("статья 390: нет горизонтальной прокрутки страницы",
+               data and data.get("doc", 0) <= data.get("vw", 0) + 1, str(data))
+            ok("статья 390: таблица прокручивается внутри блока",
+               data and data.get("tw", 0) > data.get("cw", 0) and data.get("cw", 9999) <= data.get("vw", 0),
+               str(data))
+
+        errors = open_page(BASE + "/vytrezvlenie-piva.html", article_mobile_js)
+        ok("статья 390: нет ошибок JS", not errors, "; ".join(errors))
 
         # --- статические страницы ---
         for page in ("baza-znaniy.html", "o-proekte.html", "politika.html", "disclaimer.html"):
