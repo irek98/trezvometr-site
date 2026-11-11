@@ -14,6 +14,12 @@ import sys
 import urllib.error
 import urllib.request
 
+# Консоль Windows по умолчанию cp1251 — без этого печать «→» в отчёте падает
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+except Exception:
+    pass
+
 DOMAIN = "trezvometr.ru"
 BASE = "https://" + DOMAIN
 HTTP = "http://" + DOMAIN
