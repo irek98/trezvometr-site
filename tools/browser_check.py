@@ -134,8 +134,12 @@ def check_seo_files():
     ok("sitemap.xml: домен в адресах", DOMAIN + "/" in sm and "example.ru" not in sm)
     ok("sitemap.xml: схема sitemaps.org",
        'xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"' in sm)
-    ok("sitemap.xml: девять адресов", sm.count("<loc>") == 9, str(sm.count("<loc>")))
-    ok("sitemap.xml: статья про пиво включена", "/vytrezvlenie-piva.html" in sm)
+    pages = [n for n in sorted(os.listdir(SITE))
+             if n.endswith(".html") and n not in SERVICE_PAGES]
+    ok("sitemap.xml: по адресу на каждую страницу", sm.count("<loc>") == len(pages),
+       "%d адресов, %d страниц" % (sm.count("<loc>"), len(pages)))
+    for slug in ("/vytrezvlenie-piva.html", "/cherez-skolko-mozhno-za-rul.html"):
+        ok("sitemap.xml: статья %s включена" % slug, slug in sm)
     ok("sitemap.xml: без служебных страниц", "tests.html" not in sm and "og-image" not in sm)
 
     rb = read_text(os.path.join(SITE, "robots.txt"))
@@ -220,6 +224,44 @@ def check_articles():
 
     bz = read_text(os.path.join(SITE, "baza-znaniy.html"))
     ok("baza-znaniy → статья: перелинковка", 'href="vytrezvlenie-piva.html"' in bz)
+
+    # Статья 2 — «Через сколько можно за руль»: таблицы по напиткам и весу.
+    path2 = os.path.join(SITE, "cherez-skolko-mozhno-za-rul.html")
+    if not os.path.exists(path2):
+        ok("статья 2: страница есть", False, "нет файла")
+        return
+    t2 = read_text(path2)
+    ok("статья 2: H1 про «можно за руль»", "Через сколько можно за руль" in t2)
+    ok("статья 2: таблица водки", "Водка 40%, 100 мл" in t2)
+    ok("статья 2: таблица вина", "Вино 12%, 250 мл" in t2)
+    ok("статья 2: таблица пива", "Пиво 4,5%, 500 мл" in t2)
+    ok("статья 2: порог прибора объяснён", "0,16 мг/л" in t2)
+    ok("статья 2: ссылка на калькулятор", 'href="index.html"' in t2)
+    ok("статья 2: ссылка на режим 0,00", 'href="pro.html"' in t2)
+    ok("статья 2: ссылка на дневник", 'href="dnevnik.html"' in t2)
+    ok("статья 2: ссылка на базу знаний", 'href="baza-znaniy.html"' in t2)
+    ok("статья 2: ссылка на статью про пиво", 'href="vytrezvlenie-piva.html"' in t2)
+    ok("статья 2: подсказки о прокрутке двух таблиц",
+       t2.count('class="tiny muted scroll-hint"') == 2,
+       str(t2.count("scroll-hint")))
+    ok("baza-znaniy → статья 2: перелинковка",
+       'href="cherez-skolko-mozhno-za-rul.html"' in bz)
+
+    blocks2 = re.findall(r'<script type="application/ld\+json">(.*?)</script>', t2, re.S)
+    ok("статья 2: JSON-LD найден", len(blocks2) == 1, str(len(blocks2)))
+    if blocks2:
+        try:
+            parsed2 = json.loads(blocks2[0])
+            ok("статья 2: JSON-LD валиден", True)
+            types2 = [n.get("@type") for n in parsed2.get("@graph", []) if isinstance(n, dict)]
+            ok("статья 2: Article и BreadcrumbList", "Article" in types2 and "BreadcrumbList" in types2,
+               str(types2))
+        except Exception as e:
+            ok("статья 2: JSON-LD валиден", False, str(e)[:80])
+
+    p2 = os.path.join(SITE, "assets", "og-cherez-skolko-mozhno-za-rul.png")
+    got2 = png_size(p2) if os.path.exists(p2) else None
+    ok("assets/og-cherez-skolko-mozhno-za-rul.png: 1200×630", got2 == (1200, 630), str(got2))
 
 
 def start_edge():

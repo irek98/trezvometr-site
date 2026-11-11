@@ -6,6 +6,7 @@
 Ничего не меняет: ходит по сети, сверяет домен, canonical, robots, sitemap, обложку,
 редирект www → без www и HTTPS-сертификат. Возвращает 1, если есть провалы.
 """
+import os
 import re
 import socket
 import ssl
@@ -19,6 +20,8 @@ HTTP = "http://" + DOMAIN
 PAGES = ["/", "/pro.html", "/dnevnik.html", "/profil.html", "/baza-znaniy.html",
          "/o-proekte.html", "/politika.html", "/disclaimer.html"]
 UA = "trezvometr-deploy-check/1.0"
+HERE = os.path.dirname(os.path.abspath(__file__))
+LOCAL_SITEMAP = os.path.abspath(os.path.join(HERE, "..", "sitemap.xml"))
 
 results = []
 
@@ -87,8 +90,32 @@ def check_tls():
     ok("TLS: сертификат на домен", DOMAIN in names or ("*." + DOMAIN) in names, ", ".join(names[:4]))
 
 
+def local_sitemap():
+    """Адреса из локального sitemap.xml — эталон для сверки с продом."""
+    with open(LOCAL_SITEMAP, encoding="utf-8") as f:
+        return re.findall(r"<loc>([^<]+)</loc>", f.read())
+
+
+def pages_to_check():
+    """Страницы для проверки — из локального sitemap (новые статьи попадают сами).
+
+    Раньше список был жёстко вписан, поэтому после появления статьи проверка
+    падала на «восемь адресов» и не смотрела саму статью.
+    """
+    try:
+        locs = local_sitemap()
+    except Exception:
+        return PAGES
+    pages = []
+    for url in locs:
+        path = url.replace(BASE, "") or "/"
+        if path not in pages:
+            pages.append(path)
+    return pages or PAGES
+
+
 def check_pages():
-    for path in PAGES:
+    for path in pages_to_check():
         url = BASE + path
         try:
             status, _, body = fetch(url)
@@ -114,9 +141,14 @@ def check_files():
     try:
         status, _, body = fetch(BASE + "/sitemap.xml")
         locs = re.findall(r"<loc>([^<]+)</loc>", body)
-        ok("sitemap.xml: восемь адресов на домене",
-           status == 200 and len(locs) == 8 and all(u.startswith(BASE) for u in locs),
-           "%d адресов" % len(locs))
+        try:
+            local = local_sitemap()
+        except Exception:
+            local = []
+        same = sorted(locs) == sorted(local) and bool(local)
+        ok("sitemap.xml: адреса совпадают с локальным",
+           status == 200 and same and all(u.startswith(BASE) for u in locs),
+           "%d адресов на домене, %d локально" % (len(locs), len(local)))
         ok("sitemap.xml: без служебных страниц", "tests.html" not in body and "og-image" not in body)
         ok("sitemap.xml: схема sitemaps.org", 'xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"' in body)
     except Exception as e:
